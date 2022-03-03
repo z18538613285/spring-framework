@@ -16,11 +16,11 @@
 
 package org.springframework.core.io;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * {@link Resource} implementation for a given {@link InputStream}.
@@ -36,11 +36,16 @@ import org.springframework.util.Assert;
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
- * @since 28.12.2003
  * @see ByteArrayResource
  * @see ClassPathResource
  * @see FileSystemResource
  * @see UrlResource
+ * @since 28.12.2003
+ */
+
+/**
+ * 将给定的 InputStream 作为一种资源的 Resource 的实现类。
+ * @author huzhicaho
  */
 public class InputStreamResource extends AbstractResource {
 
@@ -49,6 +54,7 @@ public class InputStreamResource extends AbstractResource {
 	private final String description;
 
 	private boolean read = false;
+	private String str;
 
 
 	/**
@@ -127,5 +133,17 @@ public class InputStreamResource extends AbstractResource {
 	public int hashCode() {
 		return this.inputStream.hashCode();
 	}
+
+	private String getString() {
+		String a = "12";
+		String b = "23";
+		String str = a + b;
+		System.out.println(str);
+
+
+		return str;
+
+	}
+
 
 }
