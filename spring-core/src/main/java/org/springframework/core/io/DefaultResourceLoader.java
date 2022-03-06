@@ -45,6 +45,14 @@ import org.springframework.util.StringUtils;
  * @see FileSystemResourceLoader
  * @see org.springframework.context.support.ClassPathXmlApplicationContext
  */
+
+/**
+ * DefaultResourceLoader 是 ResourceLoader 的默认实现，
+ * 它接收 ClassLoader 作为构造函数的参数或者使用不带参数的构造函数，
+ * 在使用不带参数的构造函数时，使用的 ClassLoader 为默认的 ClassLoader（一般为Thread.currentThread().getContextClassLoader()），
+ * 可以通过 ClassUtils.getDefaultClassLoader()获取。当然也可以调用 setClassLoader()方法进行后续设置。
+ *
+ */
 public class DefaultResourceLoader implements ResourceLoader {
 
 	@Nullable
@@ -61,6 +69,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * at the time of this ResourceLoader's initialization.
 	 * @see java.lang.Thread#getContextClassLoader()
 	 */
+	//Thread.currentThread().getContextClassLoader();
 	public DefaultResourceLoader() {
 		this.classLoader = ClassUtils.getDefaultClassLoader();
 	}
@@ -115,6 +124,10 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * allowing for introspection as well as modification.
 	 * @since 4.3
 	 */
+	/**
+	 * ProtocolResolver ，用户自定义协议资源解决策略，作为 DefaultResourceLoader 的 SPI，它允许用户自定义资源加载协议，而不需要继承 ResourceLoader 的子类。
+	 * @return
+	 */
 	public Collection<ProtocolResolver> getProtocolResolvers() {
 		return this.protocolResolvers;
 	}
@@ -140,6 +153,23 @@ public class DefaultResourceLoader implements ResourceLoader {
 	}
 
 
+	/**
+	 * ResourceLoader 中最核心的方法为 getResource(),它根据提供的 location 返回相应的 Resource，
+	 * 而 DefaultResourceLoader 对该方法提供了核心实现(它的两个子类都没有提供覆盖该方法，所以可以断定ResourceLoader 的资源加载策略
+	 * 就封装 DefaultResourceLoader中)
+	 *
+	 * 首先通过 ProtocolResolver 来加载资源，成功返回 Resource，否则调用如下逻辑：
+	 *
+	 * 若 location 以 / 开头，则调用 getResourceByPath()构造 ClassPathContextResource 类型资源并返回。
+	 *
+	 * 若 location 以 classpath: 开头，则构造 ClassPathResource 类型资源并返回，在构造该资源时，通过 getClassLoader()获取当前的 ClassLoader。
+	 *
+	 * 构造 URL ，尝试通过它进行资源定位，若没有抛出 MalformedURLException 异常，则判断是否为 FileURL ,
+	 * 如果是则构造 FileUrlResource 类型资源，否则构造 UrlResource。
+	 * 若在加载过程中抛出 MalformedURLException 异常，则委派 getResourceByPath() 实现资源定位加载。
+	 * @param location
+	 * @return
+	 */
 	@Override
 	public Resource getResource(String location) {
 		Assert.notNull(location, "Location must not be null");
@@ -157,6 +187,10 @@ public class DefaultResourceLoader implements ResourceLoader {
 		else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
 			return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
 		}
+		/**
+		 * 在getResource()资源加载策略中，我们知道 D:/Users/chenming673/Documents/spark.txt资源其实在该方法中没有相应的资源类型，
+		 * 那么它就会在抛出 MalformedURLException 异常时通过 getResourceByPath() 构造一个 ClassPathResource 类型的资源
+		 */
 		else {
 			try {
 				// Try to parse the location as a URL...

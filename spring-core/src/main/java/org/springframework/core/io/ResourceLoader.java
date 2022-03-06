@@ -38,13 +38,11 @@ import org.springframework.util.ResourceUtils;
  * @see org.springframework.core.io.support.ResourcePatternResolver
  * @see org.springframework.context.ApplicationContext
  * @see org.springframework.context.ResourceLoaderAware
- */
-
-/**
- * 为 Spring 资源加载的统一抽象，具体的资源加载则由相应的实现类来完成，
- * 所以我们可以将 ResourceLoader 称作为统一资源定位器
  *
- * ResourceLoader，定义资源加载器，主要应用于根据给定的资源文件地址，返回对应的 Resource
+ * @tips  * 为 Spring 资源加载的统一抽象，具体的资源加载则由相应的实现类来完成，
+ *  * 所以我们可以将 ResourceLoader 称作为统一资源定位器
+ *  *
+ *  * ResourceLoader，定义资源加载器，主要应用于根据给定的资源文件地址，返回对应的 Resource
  */
 public interface ResourceLoader {
 
