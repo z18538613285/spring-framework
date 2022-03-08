@@ -209,6 +209,10 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	 * @see #getResourceLoader()
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource)
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource[])
+	 *
+	 * @tips 整个逻辑比较简单，首先获取 ResourceLoader，然后根据不同的 ResourceLoader 执行不同的逻辑，
+	 * 主要是可能存在多个 Resource，但是最终都会回归到 XmlBeanDefinitionReader.loadBeanDefinitions() ，
+	 * 所以这是一个递归的过程。
 	 */
 	public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources) throws BeanDefinitionStoreException {
 		ResourceLoader resourceLoader = getResourceLoader();

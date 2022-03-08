@@ -87,6 +87,9 @@ public class XmlValidationModeDetector {
 	 * @throws IOException in case of I/O failure
 	 * @see #VALIDATION_DTD
 	 * @see #VALIDATION_XSD
+	 *
+	 * @tips 从代码中看，主要是通过读取 XML 文件的内容，判断内容中是否包含有 DOCTYPE ，如果是 则为 DTD，否则为 XSD，
+	 * 当然只会读取到 第一个 "<" 处，因为 验证模式一定会在第一个 “<” 之前。如果当中出现了 CharConversionException 异常，则为 XSD模式。
 	 */
 	public int detectValidationMode(InputStream inputStream) throws IOException {
 		// Peek into the file to look for DOCTYPE.
@@ -94,25 +97,30 @@ public class XmlValidationModeDetector {
 		try {
 			boolean isDtdValidated = false;
 			String content;
+			// 一行一行读取 xml 文件的内容
 			while ((content = reader.readLine()) != null) {
 				content = consumeCommentTokens(content);
 				if (this.inComment || !StringUtils.hasText(content)) {
 					continue;
 				}
+				// 包含 DOCTYPE 为 DTD 模式
 				if (hasDoctype(content)) {
 					isDtdValidated = true;
 					break;
 				}
+				// 读取 < 开始符号，验证模式一定会在 < 符号之前 如果这一行有 < ，并且 < 后面跟着的是字母，则返回 true 。
 				if (hasOpeningTag(content)) {
 					// End of meaningful data...
 					break;
 				}
 			}
+			// 为 true 返回 DTD，否则返回 XSD
 			return (isDtdValidated ? VALIDATION_DTD : VALIDATION_XSD);
 		}
 		catch (CharConversionException ex) {
 			// Choked on some character encoding...
 			// Leave the decision up to the caller.
+			// 出现异常，为 XSD
 			return VALIDATION_AUTO;
 		}
 		finally {
@@ -138,8 +146,9 @@ public class XmlValidationModeDetector {
 			return false;
 		}
 		int openTagIndex = content.indexOf('<');
-		return (openTagIndex > -1 && (content.length() > openTagIndex + 1) &&
-				Character.isLetter(content.charAt(openTagIndex + 1)));
+		return (openTagIndex > -1 &&  // < 存在
+				(content.length() > openTagIndex + 1) && // < 后面还有内容
+				Character.isLetter(content.charAt(openTagIndex + 1))); // < 后面的内容是字母
 	}
 
 	/**

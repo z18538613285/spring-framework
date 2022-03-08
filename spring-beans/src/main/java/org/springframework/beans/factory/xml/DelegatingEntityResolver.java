@@ -35,6 +35,10 @@ import org.springframework.util.Assert;
  * @since 2.0
  * @see BeansDtdResolver
  * @see PluggableSchemaResolver
+ *
+ * @tips 在 Spring 中使用 DelegatingEntityResolver 为 EntityResolver 的实现类，
+ * 不同的验证模式使用不同的解析器解析，如果是 DTD 验证模式则使用 BeansDtdResolver 来进行解析，
+ * 如果是 XSD 则使用 PluggableSchemaResolver 来进行解析。
  */
 public class DelegatingEntityResolver implements EntityResolver {
 
@@ -77,6 +81,29 @@ public class DelegatingEntityResolver implements EntityResolver {
 	}
 
 
+	/**
+	 * 接口方法接收两个参数 publicId 和 systemId，并返回 InputSource 对象。两个参数声明如下：
+	 *
+	 * publicId：被引用的外部实体的公共标识符，如果没有提供，则返回null
+	 * systemId：被引用的外部实体的系统标识符 这两个参数的实际内容和具体的验证模式有关系。如下
+	 *
+	 * XSD 验证模式
+	 * publicId：null
+	 * systemId：http://www.springframework.org/schema/beans/spring-beans.xsd
+	 *
+	 * DTD 验证模式
+	 * publicId：-//SPRING//DTD BEAN 2.0//EN
+	 * systemId：http://www.springframework.org/dtd/spring-beans.dtd
+	 *
+	 * @tips 如果是 DTD 验证模式，则使用 BeansDtdResolver 来进行解析
+	 * 		如果是 XSD 验证模式，则使用 PluggableSchemaResolver 来进行解析。
+	 *
+	 * @param publicId
+	 * @param systemId
+	 * @return
+	 * @throws SAXException
+	 * @throws IOException
+	 */
 	@Override
 	@Nullable
 	public InputSource resolveEntity(@Nullable String publicId, @Nullable String systemId)

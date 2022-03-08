@@ -54,12 +54,15 @@ import org.springframework.util.CollectionUtils;
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
+ *
+ * @tips 读取 classpath 下的所有 "META-INF/spring.schemas" 成一个 namespaceURI 与 Schema 文件地址的 map 。
  */
 public class PluggableSchemaResolver implements EntityResolver {
 
 	/**
 	 * The location of the file that defines schema mappings.
 	 * Can be present in multiple JAR files.
+	 * 默认 {@link #schemaMappingsLocation} 地址
 	 */
 	public static final String DEFAULT_SCHEMA_MAPPINGS_LOCATION = "META-INF/spring.schemas";
 
@@ -69,11 +72,12 @@ public class PluggableSchemaResolver implements EntityResolver {
 	@Nullable
 	private final ClassLoader classLoader;
 
+//	Schema 文件地址
 	private final String schemaMappingsLocation;
 
 	/** Stores the mapping of schema URL -> local schema path. */
 	@Nullable
-	private volatile Map<String, String> schemaMappings;
+	private volatile Map<String, String> schemaMappings; // namespaceURI 与 Schema 文件地址的映射集合
 
 
 	/**
@@ -104,6 +108,14 @@ public class PluggableSchemaResolver implements EntityResolver {
 	}
 
 
+	/**
+	 * 首先调用 getSchemaMappings() 获取一个映射表(systemId 与其在本地的对照关系)，==> spring.schemas
+	 * 然后根据传入的 systemId 获取该 systemId 在本地的路径 resourceLocation，最后根据 resourceLocation 构造 InputSource 对象。
+	 * @param publicId
+	 * @param systemId
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	@Nullable
 	public InputSource resolveEntity(@Nullable String publicId, @Nullable String systemId) throws IOException {
@@ -143,9 +155,11 @@ public class PluggableSchemaResolver implements EntityResolver {
 
 	/**
 	 * Load the specified schema mappings lazily.
+	 * @tips 获取一个映射表(systemId 与其在本地的对照关系)。
 	 */
 	private Map<String, String> getSchemaMappings() {
 		Map<String, String> schemaMappings = this.schemaMappings;
+		// 双重检查锁，实现 schemaMappings 单例
 		if (schemaMappings == null) {
 			synchronized (this) {
 				schemaMappings = this.schemaMappings;
@@ -154,11 +168,13 @@ public class PluggableSchemaResolver implements EntityResolver {
 						logger.trace("Loading schema mappings from [" + this.schemaMappingsLocation + "]");
 					}
 					try {
+						// 以 Properties 的方式，读取 schemaMappingsLocation
 						Properties mappings =
 								PropertiesLoaderUtils.loadAllProperties(this.schemaMappingsLocation, this.classLoader);
 						if (logger.isTraceEnabled()) {
 							logger.trace("Loaded schema mappings: " + mappings);
 						}
+						// 将 mappings 初始化到 schemaMappings 中
 						schemaMappings = new ConcurrentHashMap<>(mappings.size());
 						CollectionUtils.mergePropertiesIntoMap(mappings, schemaMappings);
 						this.schemaMappings = schemaMappings;

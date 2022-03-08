@@ -409,12 +409,24 @@ public class BeanDefinitionParserDelegate {
 	 * Parses the supplied {@code <bean>} element. May return {@code null}
 	 * if there were errors during parse. Errors are reported to the
 	 * {@link org.springframework.beans.factory.parsing.ProblemReporter}.
+	 *
+	 * @tips 这个方法还没有对 Bean 标签进行解析，只是在解析动作之前做了一些功能架构，主要的工作有：
+	 *
+	 * 解析 id、name 属性，确定 alias 集合，检测 beanName 是否唯一
+	 * 调用方法 parseBeanDefinitionElement() 对属性进行解析并封装成 GenericBeanDefinition 实例 beanDefinition
+	 * 根据所获取的信息（beanName、aliases、beanDefinition）构造 BeanDefinitionHolder 实例对象并返回。
+	 *
+	 * @tips  beanName 的命名规则：如果 id 不为空，则 beanName = id；如果 id 为空，但是 alias 不空，则 beanName 为 alias 的第一个元素，
+	 * 如果两者都为空，则根据默认规则来设置 beanName。
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+		// 解析 ID 属性
 		String id = ele.getAttribute(ID_ATTRIBUTE);
+		// 解析 name 属性
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
 
+		// 分割 name 属性
 		List<String> aliases = new ArrayList<>();
 		if (StringUtils.hasLength(nameAttr)) {
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
@@ -430,12 +442,15 @@ public class BeanDefinitionParserDelegate {
 			}
 		}
 
+		// 检查 name 的唯一性
 		if (containingBean == null) {
 			checkNameUniqueness(beanName, aliases, ele);
 		}
 
+		// 解析 属性，构造 AbstractBeanDefinition
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
+			// 如果 beanName 不存在，则根据条件构造一个 beanName
 			if (!StringUtils.hasText(beanName)) {
 				try {
 					if (containingBean != null) {
@@ -465,6 +480,7 @@ public class BeanDefinitionParserDelegate {
 				}
 			}
 			String[] aliasesArray = StringUtils.toStringArray(aliases);
+			// 封装 BeanDefinitionHolder
 			return new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
 		}
 
@@ -503,26 +519,54 @@ public class BeanDefinitionParserDelegate {
 		this.parseState.push(new BeanEntry(beanName));
 
 		String className = null;
+		// 解析 class 属性
 		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
 			className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
 		}
 		String parent = null;
+		// 解析 parent 属性
 		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
 			parent = ele.getAttribute(PARENT_ATTRIBUTE);
 		}
 
 		try {
+			// 创建用于承载属性的 GenericBeanDefinition 实例
+			/**
+			 * 该方法主要是设置 parentName 、className、classLoader。
+			 * 创建完 GenericBeanDefinition 实例后，再调用 parseBeanDefinitionAttributes() ，
+			 * 该方法将创建好的 GenericBeanDefinition 实例当做参数，对 Bean 标签的所有属性进行解析，
+			 */
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
+			// 解析默认 bean 的各种属性
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+			// 提取 description
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
+			/**
+			 * 对子元素 meta、lookup-method、replace-method 完成解析，三个子元素的作用如下：
+			 *
+			 * meta：元数据。当需要使用里面的信息时可以通过key获取
+			 *
+			 * lookup-method：Spring 动态改变 bean 里方法的实现。方法执行返回的对象，使用 Spring 内原有的这类对象替换，通过改变方法返回值来动态改变方法。
+			 * 内部实现为使用 cglib 方法，重新生成子类，重写配置的方法和返回对象，达到动态改变的效果。
+			 *
+			 * replace-method：Spring 动态改变 bean 里方法的实现。需要改变的方法，
+			 * 使用 Spring 内原有其他类（需要继承接口org.springframework.beans.factory.support.MethodReplacer）的逻辑，替换这个方法。
+			 * 通过改变方法执行逻辑来动态改变方法。
+			 */
+			// 解析元数据
 			parseMetaElements(ele, bd);
+			// 解析 lookup-method 属性
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+			// 解析 replaced-method 属性
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
+			// 解析构造函数参数
 			parseConstructorArgElements(ele, bd);
+			// 解析 property 子元素
 			parsePropertyElements(ele, bd);
+			// 解析 qualifier 子元素
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());
@@ -552,13 +596,19 @@ public class BeanDefinitionParserDelegate {
 	 * @param beanName bean name
 	 * @param containingBean containing bean definition
 	 * @return a bean definition initialized according to the bean element attributes
+	 *
+	 * @tips 从上面代码我们可以清晰地看到对 Bean 标签属性的解析，这些属性我们在工作中都或多或少用到过。
+	 * 完成 Bean 标签基本属性解析后，会依次调用 parseMetaElements()、parseLookupOverrideSubElements()、parseReplacedMethodSubElements()
+	 * 对子元素 meta、lookup-method、replace-method 完成解析。
 	 */
 	public AbstractBeanDefinition parseBeanDefinitionAttributes(Element ele, String beanName,
 			@Nullable BeanDefinition containingBean, AbstractBeanDefinition bd) {
 
+		// 解析 scope 标签
 		if (ele.hasAttribute(SINGLETON_ATTRIBUTE)) {
 			error("Old 1.x 'singleton' attribute in use - upgrade to 'scope' declaration", ele);
 		}
+
 		else if (ele.hasAttribute(SCOPE_ATTRIBUTE)) {
 			bd.setScope(ele.getAttribute(SCOPE_ATTRIBUTE));
 		}
@@ -567,24 +617,29 @@ public class BeanDefinitionParserDelegate {
 			bd.setScope(containingBean.getScope());
 		}
 
+		// 解析 abstract 标签
 		if (ele.hasAttribute(ABSTRACT_ATTRIBUTE)) {
 			bd.setAbstract(TRUE_VALUE.equals(ele.getAttribute(ABSTRACT_ATTRIBUTE)));
 		}
 
+		// 解析 lazy-init 标签
 		String lazyInit = ele.getAttribute(LAZY_INIT_ATTRIBUTE);
 		if (isDefaultValue(lazyInit)) {
 			lazyInit = this.defaults.getLazyInit();
 		}
 		bd.setLazyInit(TRUE_VALUE.equals(lazyInit));
 
+		// 解析 autowire 标签
 		String autowire = ele.getAttribute(AUTOWIRE_ATTRIBUTE);
 		bd.setAutowireMode(getAutowireMode(autowire));
 
+		// 解析 depends-on 标签
 		if (ele.hasAttribute(DEPENDS_ON_ATTRIBUTE)) {
 			String dependsOn = ele.getAttribute(DEPENDS_ON_ATTRIBUTE);
 			bd.setDependsOn(StringUtils.tokenizeToStringArray(dependsOn, MULTI_VALUE_ATTRIBUTE_DELIMITERS));
 		}
 
+		// 解析 autowire-candidate 标签
 		String autowireCandidate = ele.getAttribute(AUTOWIRE_CANDIDATE_ATTRIBUTE);
 		if (isDefaultValue(autowireCandidate)) {
 			String candidatePattern = this.defaults.getAutowireCandidates();
@@ -597,10 +652,12 @@ public class BeanDefinitionParserDelegate {
 			bd.setAutowireCandidate(TRUE_VALUE.equals(autowireCandidate));
 		}
 
+		// 解析 primay 标签
 		if (ele.hasAttribute(PRIMARY_ATTRIBUTE)) {
 			bd.setPrimary(TRUE_VALUE.equals(ele.getAttribute(PRIMARY_ATTRIBUTE)));
 		}
 
+		// 解析 init-method 标签
 		if (ele.hasAttribute(INIT_METHOD_ATTRIBUTE)) {
 			String initMethodName = ele.getAttribute(INIT_METHOD_ATTRIBUTE);
 			bd.setInitMethodName(initMethodName);
@@ -610,6 +667,7 @@ public class BeanDefinitionParserDelegate {
 			bd.setEnforceInitMethod(false);
 		}
 
+		// 解析 destroy-mothod 标签
 		if (ele.hasAttribute(DESTROY_METHOD_ATTRIBUTE)) {
 			String destroyMethodName = ele.getAttribute(DESTROY_METHOD_ATTRIBUTE);
 			bd.setDestroyMethodName(destroyMethodName);
@@ -619,6 +677,7 @@ public class BeanDefinitionParserDelegate {
 			bd.setEnforceDestroyMethod(false);
 		}
 
+		// 解析 factory-method 标签
 		if (ele.hasAttribute(FACTORY_METHOD_ATTRIBUTE)) {
 			bd.setFactoryMethodName(ele.getAttribute(FACTORY_METHOD_ATTRIBUTE));
 		}
@@ -645,6 +704,10 @@ public class BeanDefinitionParserDelegate {
 
 	/**
 	 * Parse the meta elements underneath the given element, if any.
+	 *
+	 * @tips meta 所声明的 key 并不会在 Bean 中体现，只是一个额外的声明，当我们需要使用里面的信息时，通过 BeanDefinition 的 getAttribute() 获取
+	 * 解析过程较为简单，获取相应的 key - value 构建 BeanMetadataAttribute 对象，然后通过 addMetadataAttribute() 加入到 AbstractBeanDefinition 中。
+	 *
 	 */
 	public void parseMetaElements(Element ele, BeanMetadataAttributeAccessor attributeAccessor) {
 		NodeList nl = ele.getChildNodes();
@@ -729,6 +792,11 @@ public class BeanDefinitionParserDelegate {
 
 	/**
 	 * Parse lookup-override sub-elements of the given bean element.
+	 * @tips lookup-method ：获取器注入，是把一个方法声明为返回某种类型的 bean 但实际要返回的 bean 是在配置文件里面配置的。
+	 * 该方法可以用于设计一些可插拔的功能上，解除程序依赖。
+	 *
+	 * 解析过程和 meta 子元素没有多大区别，同样是解析 methodName、beanRef 构造一个 LookupOverride 对象，然后覆盖即可。
+	 * 在实例化 Bean 的时候，再详细阐述具体的实现过程，这里仅仅只是一个标记作用。
 	 */
 	public void parseLookupOverrideSubElements(Element beanEle, MethodOverrides overrides) {
 		NodeList nl = beanEle.getChildNodes();
@@ -747,6 +815,11 @@ public class BeanDefinitionParserDelegate {
 
 	/**
 	 * Parse replaced-method sub-elements of the given bean element.
+	 *
+	 * @tips replaced-method ：可以在运行时调用新的方法替换现有的方法，还能动态的更新原有方法的逻辑
+	 * 该子元素和 lookup-method 资源的解析过程差不多，同样是提取 name 和 replacer 属性构建 ReplaceOverride 对象，
+	 * 然后记录到 AbstractBeanDefinition 中的 methodOverrides 属性中。
+	 * 对于 lookup-method 和 replaced-method 两个子元素是如何使用以完成他们所提供的功能，在后续实例化 Bean 的时候会做详细说明。
 	 */
 	public void parseReplacedMethodSubElements(Element beanEle, MethodOverrides overrides) {
 		NodeList nl = beanEle.getChildNodes();

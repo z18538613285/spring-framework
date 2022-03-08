@@ -41,6 +41,11 @@ public interface DocumentLoader {
 	 * @param namespaceAware {@code true} if support for XML namespaces is to be provided
 	 * @return the loaded {@link Document document}
 	 * @throws Exception if an error occurs
+	 *
+	 * @tips loadDocument() ，该方法接收五个参数： * inputSource：加载 Document 的 Resource 源 * entityResolver：解析文件的解析器
+	 * * errorHandler：处理加载 Document 对象的过程的错误 * validationMode：验证模式 * namespaceAware：命名空间支持。
+	 * 如果要提供对 XML 名称空间的支持，则为true
+	 * 该方法由 DocumentLoader 的默认实现类 DefaultDocumentLoader 实现
 	 */
 	Document loadDocument(
 			InputSource inputSource, EntityResolver entityResolver,
