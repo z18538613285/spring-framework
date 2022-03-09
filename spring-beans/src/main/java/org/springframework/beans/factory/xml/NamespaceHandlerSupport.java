@@ -66,6 +66,8 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	/**
 	 * Parses the supplied {@link Element} by delegating to the {@link BeanDefinitionParser} that is
 	 * registered for that {@link Element}.
+	 * @tips 获取 localName，在上面的例子中就是 ： user，然后从 Map 实例 parsers 中获取 BeanDefinitionParser 对象。
+	 * 返回 BeanDefinitionParser 对象后，调用其 parse()，该方法在 AbstractBeanDefinitionParser 中实现
 	 */
 	@Override
 	@Nullable
@@ -77,6 +79,7 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	/**
 	 * Locates the {@link BeanDefinitionParser} from the register implementations using
 	 * the local name of the supplied {@link Element}.
+	 * @tips 调用 findParserForElement() 方法获取 BeanDefinitionParser 实例，其实就是获取在 init() 方法里面注册的实例对象。
 	 */
 	@Nullable
 	private BeanDefinitionParser findParserForElement(Element element, ParserContext parserContext) {
@@ -133,6 +136,10 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	 * Subclasses can call this to register the supplied {@link BeanDefinitionParser} to
 	 * handle the specified element. The element name is the local (non-namespace qualified)
 	 * name.
+	 *
+	 * @tips 直接调用父类的 registerBeanDefinitionParser() 方法进行注册
+	 * 其实就是将映射关系放在一个 Map 结构的 parsers 对象中：private final Map<String, BeanDefinitionParser> parsers 。
+	 * 完成后返回 NamespaceHandler 对象，然后调用其 parse() 方法开始自定义标签的解析，
 	 */
 	protected final void registerBeanDefinitionParser(String elementName, BeanDefinitionParser parser) {
 		this.parsers.put(elementName, parser);

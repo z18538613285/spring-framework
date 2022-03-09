@@ -589,6 +589,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	/**
 	 * Create the {@link XmlReaderContext} to pass over to the document reader.
+	 *
+	 * @tips XmlReaderContext 构造函数中最后一个参数就是 NamespaceHandlerResolver 对象，该对象由 getNamespaceHandlerResolver() 提供，
 	 */
 	public XmlReaderContext createReaderContext(Resource resource) {
 		return new XmlReaderContext(resource, this.problemReporter, this.eventListener,
@@ -598,6 +600,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	/**
 	 * Lazily create a default NamespaceHandlerResolver, if not set before.
 	 * @see #createDefaultNamespaceHandlerResolver()
+	 *
+	 * @tips 所以 getNamespaceHandlerResolver().resolve(namespaceUri) 调用的就是 DefaultNamespaceHandlerResolver 的 resolve()。
 	 */
 	public NamespaceHandlerResolver getNamespaceHandlerResolver() {
 		if (this.namespaceHandlerResolver == null) {

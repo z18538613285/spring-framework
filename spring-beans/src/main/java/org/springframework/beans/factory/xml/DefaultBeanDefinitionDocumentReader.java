@@ -190,6 +190,18 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 *
 	 * 两种方式的读取和解析都存在较大的差异，所以采用不同的解析方法，如果根节点或者子节点采用默认命名空间的话，则调用 parseDefaultElement() 进行解析，
 	 * 否则调用 delegate.parseCustomElement() 方法进行自定义解析。
+	 *
+	 * @tips 解析 BeanDefinition 的入口在 DefaultBeanDefinitionDocumentReader.parseBeanDefinitions() 。
+	 * 该方法会根据命令空间来判断标签是默认标签还是自定义标签，其中默认标签由 parseDefaultElement() 实现，自定义标签由 parseCustomElement() 实现。
+	 * 在默认标签解析中，会根据标签名称的不同进行 import 、alias 、bean 、beans 四大标签进行处理，其中 bean 标签的解析为核心，
+	 * 它由 processBeanDefinition() 方法实现。processBeanDefinition() 开始进入解析核心工作，分为三步：
+	 *
+	 * 				解析默认标签：BeanDefinitionParserDelegate.parseBeanDefinitionElement()
+	 * 				解析默认标签下的自定义标签：BeanDefinitionParserDelegate.decorateBeanDefinitionIfRequired()
+	 * 				注册解析的 BeanDefinition：BeanDefinitionReaderUtils.registerBeanDefinition
+	 *
+	 * 在默认标签解析过程中，核心工作由 parseBeanDefinitionElement() 方法实现，该方法会依次解析 Bean 标签的属性、各个子元素，
+	 * 解析完成后返回一个 GenericBeanDefinition 实例对象。
 	 */
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
 		// <1> 如果根节点使用默认命名空间，执行默认解析
@@ -213,6 +225,15 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		}
 		// <2> 如果根节点非默认命名空间，执行自定义解析
 		else {
+			/**
+			 * 自定义标签的解析过程已经分析完成了。其实整个过程还是较为简单：首先会加载 handlers 文件，
+			 * 将其中内容进行一个解析，形成 <namespaceUri,类路径> 这样的一个映射，然后根据获取的 namespaceUri 就可以得到相应的类路径，
+			 * 对其进行初始化等到相应的 Handler 对象，调用 parse() 方法，
+			 * 在该方法中根据标签的 localName 得到相应的 BeanDefinitionParser 实例对象，调用 parse() ，
+			 * 该方法定义在 AbstractBeanDefinitionParser 抽象类中，核心逻辑封装在其 parseInternal() 中，
+			 * 该方法返回一个 AbstractBeanDefinition 实例对象，其主要是在 AbstractSingleBeanDefinitionParser 中实现，
+			 * 对于自定义的 Parser 类，其需要实现 getBeanClass() 或者 getBeanClassName() 和 doParse()。
+			 */
 			delegate.parseCustomElement(root);
 		}
 	}

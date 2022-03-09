@@ -57,6 +57,17 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 	public static final String NAME_ATTRIBUTE = "name";
 
 
+	/**
+	 * 核心在方法 parseInternal() 为什么这么说，以为该方法返回的是 AbstractBeanDefinition 对象，
+	 * 从前面默认标签的解析工作中我们就可以判断该方法就是将标签解析为 AbstractBeanDefinition ，
+	 * 且后续代码都是将 AbstractBeanDefinition 转换为 BeanDefinitionHolder，
+	 * 所以真正的解析工作都交由 parseInternal() 实现，
+	 *
+	 * @param element the element that is to be parsed into one or more {@link BeanDefinition BeanDefinitions}
+	 * @param parserContext the object encapsulating the current state of the parsing process;
+	 * provides access to a {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
+	 * @return
+	 */
 	@Override
 	@Nullable
 	public final BeanDefinition parse(Element element, ParserContext parserContext) {
