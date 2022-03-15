@@ -642,6 +642,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 单例模式 & 运行循环依赖&当前单例 bean 是否正在被创建
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
+		/**
+		 * 如果 earlySingletonExposure == true 的话，则调用 addSingletonFactory() 将他们添加到缓存中，但是一个 bean 要具备如下条件才会添加至缓存中：
+		 *
+		 * 单例
+		 * 运行提前暴露 bean
+		 * 当前 bean 正在创建中
+		 */
 		if (earlySingletonExposure) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Eagerly caching bean '" + beanName +
