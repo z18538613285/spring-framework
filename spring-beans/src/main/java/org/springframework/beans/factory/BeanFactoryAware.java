@@ -49,6 +49,9 @@ public interface BeanFactoryAware extends Aware {
 	 * The bean can immediately call methods on the factory.
 	 * @throws BeansException in case of initialization errors
 	 * @see BeanInitializationException
+	 *
+	 * @tips  将 BeanFactory 提供给 bean 实例回调调用时机和 setBeanClassLoader 一样
+	 *
 	 */
 	void setBeanFactory(BeanFactory beanFactory) throws BeansException;
 

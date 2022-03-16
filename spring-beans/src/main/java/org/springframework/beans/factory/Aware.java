@@ -31,6 +31,24 @@ package org.springframework.beans.factory;
  * @author Chris Beams
  * @author Juergen Hoeller
  * @since 3.1
+ *
+ * @tips 其实是 Spring 容器在初始化主动检测当前 bean 是否实现了 Aware 接口，
+ * 如果实现了则回调其 set 方法将相应的参数设置给该 bean ，这个时候该 bean 就从 Spring 容器中取得相应的资源。
+ * 最后文章末尾列出部分常用的 Aware 子接口，便于日后查询：
+ *
+ * LoadTimeWeaverAware：加载Spring Bean时织入第三方模块，如AspectJ
+ * BeanClassLoaderAware：加载Spring Bean的类加载器
+ * BootstrapContextAware：资源适配器BootstrapContext，如JCA,CCI
+ * ResourceLoaderAware：底层访问资源的加载器
+ * BeanFactoryAware：声明BeanFactory
+ * PortletConfigAware：PortletConfig
+ * PortletContextAware：PortletContext
+ * ServletConfigAware：ServletConfig
+ * ServletContextAware：ServletContext
+ * MessageSourceAware：国际化
+ * ApplicationEventPublisherAware：应用事件
+ * NotificationPublisherAware：JMX通知
+ * BeanNameAware：声明Spring Bean的名字
  */
 public interface Aware {
 
