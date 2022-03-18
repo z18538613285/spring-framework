@@ -2093,11 +2093,19 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 *
 	 * 首先检查是否为 InitializingBean ，如果是的话需要执行 afterPropertiesSet()，因为我们除了可以使用 init-method 来自定初始化方法外，
 	 * 还可以实现 InitializingBean 接口，该接口仅有一个 afterPropertiesSet() 方法，而两者的执行先后顺序是先 afterPropertiesSet() 后 init-method。
+	 *
+	 * @tips 从 invokeInitMethods() 中，我们知道 init-method 指定的方法会在 afterPropertiesSet() 之后执行，如果 afterPropertiesSet() 中出现了异常，
+	 * 则 init-method 是不会执行的，而且由于 init-method 采用的是反射执行的方式，所以 afterPropertiesSet() 的执行效率一般会高些，
+	 * 但是并不能排除我们要优先使用 init-method，主要是因为它消除了 bean 对 Spring 的依赖，Spring 没有侵入到我们业务代码，这
+	 * 样会更加符合 Spring 的理念。诚然，init-method 是基于 xml 配置文件的，就目前而言，我们的工程几乎都摒弃了配置，而采用注释的方式，
+	 * 那么 @PreDestory 可能适合你，当然这个注解我们后面分析。
 	 */
 	protected void invokeInitMethods(String beanName, Object bean, @Nullable RootBeanDefinition mbd)
 			throws Throwable {
 
 		// 首先会检查是否是 InitializingBean ，如果是的话需要调用 afterPropertiesSet()
+		// 是否实现 InitializingBean
+		// 如果实现了 InitializingBean 接口，则只掉调用bean的 afterPropertiesSet()
 		boolean isInitializingBean = (bean instanceof InitializingBean);
 		if (isInitializingBean && (mbd == null || !mbd.isExternallyManagedInitMethod("afterPropertiesSet"))) {
 			if (logger.isTraceEnabled()) {
@@ -2116,16 +2124,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 			else {
 				// 属性初始化的处理
+				// 直接调用 afterPropertiesSet()
 				((InitializingBean) bean).afterPropertiesSet();
 			}
 		}
 
 		if (mbd != null && bean.getClass() != NullBean.class) {
 			String initMethodName = mbd.getInitMethodName();
+			// 判断是否指定了 init-method()，
+			// 如果指定了 init-method()，则再调用制定的init-method
 			if (StringUtils.hasLength(initMethodName) &&
 					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&
 					!mbd.isExternallyManagedInitMethod(initMethodName)) {
 				// 激活用户自定义的 初始化方法
+				// 利用反射机制执行
 				invokeCustomInitMethod(beanName, bean, mbd);
 			}
 		}

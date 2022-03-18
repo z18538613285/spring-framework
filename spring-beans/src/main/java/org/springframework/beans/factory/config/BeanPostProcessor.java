@@ -39,6 +39,10 @@ import org.springframework.lang.Nullable;
  * @see DestructionAwareBeanPostProcessor
  * @see ConfigurableBeanFactory#addBeanPostProcessor
  * @see BeanFactoryPostProcessor
+ *
+ * @tips 一般普通的 BeanFactory 是不支持自动注册 BeanPostProcessor 的，需要我们手动调用 addBeanPostProcessor() 进行注册，
+ * 注册后的 BeanPostProcessor 适用于所有该 BeanFactory 创建的 bean，但是 ApplicationContext 可以在其 bean 定义中自动检测
+ * 所有的 BeanPostProcessor 并自动完成注册，同时将他们应用到随后创建的任何 bean 中。
  */
 public interface BeanPostProcessor {
 
