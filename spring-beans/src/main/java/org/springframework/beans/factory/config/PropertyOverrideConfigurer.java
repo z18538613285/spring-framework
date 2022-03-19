@@ -61,6 +61,8 @@ import org.springframework.beans.factory.BeanInitializationException;
  * @since 12.03.2003
  * @see #convertPropertyValue
  * @see PropertyPlaceholderConfigurer
+ *
+ * @tips PropertyOverrideConfigurer 允许我们对 Spring 容器中配置的任何我们想处理的 bean 定义的 property 信息进行覆盖替换。
  */
 public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 
@@ -103,6 +105,7 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 	protected void processProperties(ConfigurableListableBeanFactory beanFactory, Properties props)
 			throws BeansException {
 
+		// 迭代配置文件中的内容
 		for (Enumeration<?> names = props.propertyNames(); names.hasMoreElements();) {
 			String key = (String) names.nextElement();
 			try {
@@ -122,18 +125,25 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 
 	/**
 	 * Process the given key as 'beanName.property' entry.
+	 * @tips 获取分割符 “.” 的索引位置，得到 beanName 以及相应的属性，然后调用 applyPropertyValue()
 	 */
 	protected void processKey(ConfigurableListableBeanFactory factory, String key, String value)
 			throws BeansException {
 
+		// 判断是否存在 "."
+		// 获取其索引位置
 		int separatorIndex = key.indexOf(this.beanNameSeparator);
+		// 如果不存在，. 则抛出异常
 		if (separatorIndex == -1) {
 			throw new BeanInitializationException("Invalid key '" + key +
 					"': expected 'beanName" + this.beanNameSeparator + "property'");
 		}
+		// 得到 beanName
 		String beanName = key.substring(0, separatorIndex);
+		// 得到属性值
 		String beanProperty = key.substring(separatorIndex + 1);
 		this.beanNames.add(beanName);
+		// 替换
 		applyPropertyValue(factory, beanName, beanProperty, value);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Property '" + key + "' set to value [" + value + "]");
@@ -142,8 +152,11 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 
 	/**
 	 * Apply the given property value to the corresponding bean.
+	 *
+	 * @tips 从容器中获取 BeanDefinition ，然后根据属性 property 和 其值 value 构造成一个 PropertyValue 对象，
+	 * 最后调用 addPropertyValue() 方法。PropertyValue 是用于保存一组bean属性的信息和值的对像。
 	 */
-	protected void applyPropertyValue(
+	protected void 	applyPropertyValue(
 			ConfigurableListableBeanFactory factory, String beanName, String property, String value) {
 
 		BeanDefinition bd = factory.getBeanDefinition(beanName);

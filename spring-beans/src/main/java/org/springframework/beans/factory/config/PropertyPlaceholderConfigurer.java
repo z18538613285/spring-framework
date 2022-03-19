@@ -55,6 +55,10 @@ import org.springframework.util.StringValueResolver;
  * @see PlaceholderConfigurerSupport
  * @see PropertyOverrideConfigurer
  * @see org.springframework.context.support.PropertySourcesPlaceholderConfigurer
+ *
+ * @tips PropertyPlaceholderConfigurer 允许我们用 Properties 文件中的属性来定义应用上下文（配置文件或者注解）
+ * 什么意思，就是说我们在 XML 配置文件（或者其他方式，如注解方式）中使用占位符的方式来定义一些资源，并将这些占位符所代表的资源配置到 Properties 中，
+ * 这样只需要对 Properties 文件进行修改即可，这个特性非常，在后面来介绍一种我们在项目中经常用到场景。
  */
 public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport {
 
@@ -209,7 +213,13 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 	protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess, Properties props)
 			throws BeansException {
 
+		// 首先构造一个 PlaceholderResolvingStringValueResolver 类型的 StringValueResolver 实例。StringValueResolver 为一个解析 String 类型值的策略接口，
+		// 该接口提供了 resolveStringValue() 方法用于解析 String 值。PlaceholderResolvingStringValueResolver 为其一个解析策略，
 		StringValueResolver valueResolver = new PlaceholderResolvingStringValueResolver(props);
+		/**
+		 * 得到 String 解析器的实例 valueResolver 后，则会调用 doProcessProperties() 方法来进行诊治的替换操作，
+		 * 该方法在父类 PlaceholderConfigurerSupport 中实现
+		 */
 		doProcessProperties(beanFactoryToProcess, valueResolver);
 	}
 
@@ -220,12 +230,30 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 
 		private final PlaceholderResolver resolver;
 
+		/**
+		 * 在构造 String 值解析器 StringValueResolver 时，将已经解析的 Properties 实例对象封装在 PlaceholderResolver 实例 resolver 中。
+		 * PlaceholderResolver 是一个用于解析字符串中包含占位符的替换值的策略接口，该接口有一个 resolvePlaceholder() 方法，
+		 * 用于返回占位符的替换值。还有一个 PropertyPlaceholderHelper 工具，从名字上面看应该是进行替换的。
+		 * @param props
+		 */
 		public PlaceholderResolvingStringValueResolver(Properties props) {
 			this.helper = new PropertyPlaceholderHelper(
 					placeholderPrefix, placeholderSuffix, valueSeparator, ignoreUnresolvablePlaceholders);
 			this.resolver = new PropertyPlaceholderConfigurerResolver(props);
 		}
 
+		/**
+		 * helper 为 PropertyPlaceholderHelper 实例对象，而 PropertyPlaceholderHelper 则是处理应用程序中包含占位符的字符串工具类。
+		 * 在构造 helper 实例对象时需要传入了几个参数：placeholderPrefix、placeholderSuffix、valueSeparator，
+		 * 这些值在 PlaceholderConfigurerSupport 中定义如下：
+		 *
+		 *         protected String placeholderPrefix = "${";
+		 *         protected String placeholderSuffix = "}";
+		 *         protected String valueSeparator = ":";
+		 * @param strVal the original String value (never {@code null})
+		 * @return
+		 * @throws BeansException
+		 */
 		@Override
 		@Nullable
 		public String resolveStringValue(String strVal) throws BeansException {

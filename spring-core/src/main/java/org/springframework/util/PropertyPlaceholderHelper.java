@@ -118,15 +118,38 @@ public class PropertyPlaceholderHelper {
 	 * @param value the value containing the placeholders to be replaced
 	 * @param placeholderResolver the {@code PlaceholderResolver} to use for replacement
 	 * @return the supplied value with placeholders replaced inline
+	 *
+	 * @tips 调用 replacePlaceholders() 进行占位符替换
 	 */
 	public String replacePlaceholders(String value, PlaceholderResolver placeholderResolver) {
 		Assert.notNull(value, "'value' must not be null");
 		return parseStringValue(value, placeholderResolver, null);
 	}
 
+
+
+	/**
+	 *
+	 * 调用 parseStringValue()，这个方法是这篇博客最核心的地方，${} 占位符的替换：
+	 * 流程如下
+	 *
+	 * 获取占位符前缀 "${" 的索引位置 startIndex
+	 * 如果前缀 "${" 存在，则从 “{” 后面开始获取占位符后缀 "}" 的索引位置 endIndex
+	 * 如果前缀 “${” 和后缀 "}" 都存在，则截取中间部分 placeholder
+	 * 从 Properties 中获取 placeHolder 对应的值 propVal
+	 * 如果 propVal 为空，则判断占位符中是否存在 ":"，如果存在则对占位符进行分割处理，全面部分为 actualPlaceholder，后面部分 defaultValue，
+	 * 尝试从 Properties 中获取 actualPlaceholder 对应的值 propVal，如果不存在，则将 defaultValue 的值赋值给 propVal
+	 *
+	 * 返回 propVal，也就是 Properties 中对应的值
+	 * @param value
+	 * @param placeholderResolver
+	 * @param visitedPlaceholders
+	 * @return
+	 */
 	protected String parseStringValue(
 			String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders) {
 
+		// 获取前缀 "${" 的索引位置
 		int startIndex = value.indexOf(this.placeholderPrefix);
 		if (startIndex == -1) {
 			return value;
@@ -134,8 +157,10 @@ public class PropertyPlaceholderHelper {
 
 		StringBuilder result = new StringBuilder(value);
 		while (startIndex != -1) {
+			// 获取 后缀 "}" 的索引位置
 			int endIndex = findPlaceholderEndIndex(result, startIndex);
 			if (endIndex != -1) {
+				// 截取 "${" 和 "}" 中间的内容，这也就是我们在配置文件中对应的值
 				String placeholder = result.substring(startIndex + this.placeholderPrefix.length(), endIndex);
 				String originalPlaceholder = placeholder;
 				if (visitedPlaceholders == null) {
@@ -146,15 +171,24 @@ public class PropertyPlaceholderHelper {
 							"Circular placeholder reference '" + originalPlaceholder + "' in property definitions");
 				}
 				// Recursive invocation, parsing placeholders contained in the placeholder key.
+				// 解析占位符键中包含的占位符，真正的值
 				placeholder = parseStringValue(placeholder, placeholderResolver, visitedPlaceholders);
 				// Now obtain the value for the fully resolved key...
+				// 从 Properties 中获取 placeHolder 对应的值 propVal
 				String propVal = placeholderResolver.resolvePlaceholder(placeholder);
+				// 如果不存在
 				if (propVal == null && this.valueSeparator != null) {
+					// 查询 : 的位置
 					int separatorIndex = placeholder.indexOf(this.valueSeparator);
+					// 如果存在 :
 					if (separatorIndex != -1) {
+						// 获取 : 前面部分 actualPlaceholder
 						String actualPlaceholder = placeholder.substring(0, separatorIndex);
+						// 获取 : 后面部分 defaultValue
 						String defaultValue = placeholder.substring(separatorIndex + this.valueSeparator.length());
+						// 从 Properties 中获取 actualPlaceholder 对应的值
 						propVal = placeholderResolver.resolvePlaceholder(actualPlaceholder);
+						// 如果不存在 则返回 defaultValue
 						if (propVal == null) {
 							propVal = defaultValue;
 						}
@@ -172,6 +206,7 @@ public class PropertyPlaceholderHelper {
 				}
 				else if (this.ignoreUnresolvablePlaceholders) {
 					// Proceed with unprocessed value.
+					// 忽略值
 					startIndex = result.indexOf(this.placeholderPrefix, endIndex + this.placeholderSuffix.length());
 				}
 				else {
@@ -184,6 +219,7 @@ public class PropertyPlaceholderHelper {
 				startIndex = -1;
 			}
 		}
+		// 返回propVal，就是替换之后的值
 		return result.toString();
 	}
 
