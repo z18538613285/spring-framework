@@ -81,6 +81,13 @@ public class GenericConversionService implements ConfigurableConversionService {
 
 	// ConverterRegistry implementation
 
+	/**
+	 * @tips 首先根据 converter 获取 ResolvableType，然后将其与 converter 封装成一个 ConverterAdapter 实例，最后调用 addConverter()。
+	 * ResolvableType 用于封装 Java 的类型。
+	 * ConverterAdapter 则是 Converter 的一个适配器， 它实现了 GenericConverter 和 ConditionalConverter 两个类型转换器。
+	 *
+	 * @param converter
+	 */
 	@Override
 	public void addConverter(Converter<?, ?> converter) {
 		ResolvableType[] typeInfo = getRequiredTypeInfo(converter.getClass(), Converter.class);
@@ -174,6 +181,16 @@ public class GenericConversionService implements ConfigurableConversionService {
 		return (T) convert(source, TypeDescriptor.forObject(source), TypeDescriptor.valueOf(targetType));
 	}
 
+	/**
+	 * @tips
+	 *
+	 * @param source the source object to convert (may be {@code null})
+	 * @param sourceType context about the source type to convert from
+	 * (may be {@code null} if source is {@code null})
+	 * @param targetType context about the target type to convert to (required)
+	 * @return
+	 * @tips
+	 */
 	@Override
 	@Nullable
 	public Object convert(@Nullable Object source, @Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
@@ -186,6 +203,7 @@ public class GenericConversionService implements ConfigurableConversionService {
 			throw new IllegalArgumentException("Source to convert from must be an instance of [" +
 					sourceType + "]; instead it was a [" + source.getClass().getName() + "]");
 		}
+		//当得到 GenericConverter 后，则调用其 convert() 进行类型转换。
 		GenericConverter converter = getConverter(sourceType, targetType);
 		if (converter != null) {
 			Object result = ConversionUtils.invokeConverter(converter, source, sourceType, targetType);
@@ -248,6 +266,15 @@ public class GenericConversionService implements ConfigurableConversionService {
 	 * @return the generic converter that will perform the conversion,
 	 * or {@code null} if no suitable converter was found
 	 * @see #getDefaultConverter(TypeDescriptor, TypeDescriptor)
+	 *
+	 * @tips convert() 将给定的源对象 source 转换为指定的 targetType。TypeDescriptors 提供有关发生转换的源位置和目标位置的附加上下文，
+	 * 	 通常是对象字段或属性位置。方法由子类 GenericConversionService 实现：
+	 *
+	 * 	 这段代码意图非常明确，从 converterCache 缓存中获取，如果存在返回，否则从 converters 中获取，然后加入到 converterCache 缓存中。
+	 * 	 converterCache 和 converters 是 GenericConversionService 维护的两个很重要的对象，
+	 * 	 其中 converterCache 用于存储 GenericConverter ，
+	 * 	 converters 对象为 GenericConversionService 的内部类。
+	 *
 	 */
 	@Nullable
 	protected GenericConverter getConverter(TypeDescriptor sourceType, TypeDescriptor targetType) {
@@ -496,6 +523,9 @@ public class GenericConversionService implements ConfigurableConversionService {
 
 	/**
 	 * Manages all converters registered with the service.
+	 * @tips Converters 用于管理所有注册的转换器，其内部维护一个 Set 和 Map 的数据结构用于管理转换器
+	 * 同时提供了相应的方法（如 add、remove）操作这两个集合。在 getConverter() 中如果缓存 converterCache 中 不存在，
+	 * 则调用 Converters 对象的 find() 方法获取相应的 GenericConverter，
 	 */
 	private static class Converters {
 
@@ -503,6 +533,12 @@ public class GenericConversionService implements ConfigurableConversionService {
 
 		private final Map<ConvertiblePair, ConvertersForPair> converters = new LinkedHashMap<>(256);
 
+		/**
+		 * @tips 首先调用 getConvertibleTypes() 获取 ConvertiblePair 集合，如果为空，则加入到 globalConverters 集合中，否
+		 * 则通过迭代的方式依次添加。
+		 * ConvertiblePair 为 source-to-targer 的持有者，它持有 source 和 target 的 class 类型，
+		 * @param converter
+		 */
 		public void add(GenericConverter converter) {
 			Set<ConvertiblePair> convertibleTypes = converter.getConvertibleTypes();
 			if (convertibleTypes == null) {
@@ -511,6 +547,8 @@ public class GenericConversionService implements ConfigurableConversionService {
 				this.globalConverters.add(converter);
 			}
 			else {
+				//在迭代过程中会根据 ConvertiblePair 获取相应的 ConvertersForPair ，然后 converter 转换器加入其中，
+				// ConvertiblePair 用于管理使用特定GenericConverter.ConvertiblePair 注册的转换器。
 				for (ConvertiblePair convertiblePair : convertibleTypes) {
 					getMatchableConverters(convertiblePair).add(converter);
 				}
@@ -537,6 +575,9 @@ public class GenericConversionService implements ConfigurableConversionService {
 		 * @param sourceType the source type
 		 * @param targetType the target type
 		 * @return a matching {@link GenericConverter}, or {@code null} if none found
+		 *
+		 * @tips 在 find() 中会根据 sourceType 和 targetType 去查询 Converters 中维护的 Map 中是否包括支持的注册类型，
+		 * 如果存在返回 GenericConverter ，如果没有存在返回 null。
 		 */
 		@Nullable
 		public GenericConverter find(TypeDescriptor sourceType, TypeDescriptor targetType) {
@@ -661,6 +702,14 @@ public class GenericConversionService implements ConfigurableConversionService {
 			this.converters.addFirst(converter);
 		}
 
+		/**
+		 * @tips 在迭代过程中会根据 ConvertiblePair 获取相应的 ConvertersForPair ，然后 converter 转换器加入其中，
+		 * ConvertiblePair 用于管理使用特定GenericConverter.ConvertiblePair 注册的转换器。
+		 *
+		 * @param sourceType
+		 * @param targetType
+		 * @return
+		 */
 		@Nullable
 		public GenericConverter getConverter(TypeDescriptor sourceType, TypeDescriptor targetType) {
 			for (GenericConverter converter : this.converters) {

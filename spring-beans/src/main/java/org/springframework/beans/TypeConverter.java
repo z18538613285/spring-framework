@@ -69,6 +69,9 @@ public interface TypeConverter {
 	 * @see java.beans.PropertyEditor#getValue()
 	 * @see org.springframework.core.convert.ConversionService
 	 * @see org.springframework.core.convert.converter.Converter
+	 *
+	 * @tips convertIfNecessary() 的实现者有两个：DataBinder 和 TypeConverterSupport ，其中 DataBinder 主要用于参数绑定（熟悉 Spring MVC 的都应该知道这个类），
+	 * TypeConverterSupport 则是 TypeConverter 的基本实现，使用的是 package-private 策略。 所以这里我们只需要关注 TypeConverterSupport 的 convertIfNecessary()，
 	 */
 	@Nullable
 	<T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,

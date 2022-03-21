@@ -25,6 +25,11 @@ import org.springframework.lang.Nullable;
  * @author Keith Donald
  * @author Phillip Webb
  * @since 3.0
+ *
+ * @tips ConfigurableConversionService ：ConversionService 的配置接口，继承 ConversionService 和 ConverterRegistry 两个接口，用于合并他们两者的操作，
+ * 		以便于通过 add 和 remove 的方式添加和删除转换器。
+ * 		ConversionService 接口的基础实现，适用于大部分条件下的转换工作，通过 ConfigurableConversionService 接口间接地将 ConverterRegistry 实现为注册 API 。
+ * 		DefaultConversionService ：ConversionService 接口的默认实现，适用于大部分条件下的转换工作。
  */
 public interface ConversionService {
 
@@ -87,6 +92,9 @@ public interface ConversionService {
 	 * @throws ConversionException if a conversion exception occurred
 	 * @throws IllegalArgumentException if targetType is {@code null},
 	 * or {@code sourceType} is {@code null} but source is not {@code null}
+	 *
+	 * @tips 回归到 convertIfNecessary()，在该方法中如果没有自定义的属性编辑器则调用 ConversionService 接口的 convert()，
+	 *
 	 */
 	@Nullable
 	Object convert(@Nullable Object source, @Nullable TypeDescriptor sourceType, TypeDescriptor targetType);

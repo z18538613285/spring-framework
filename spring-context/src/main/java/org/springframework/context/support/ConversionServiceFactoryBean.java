@@ -67,9 +67,14 @@ public class ConversionServiceFactoryBean implements FactoryBean<ConversionServi
 		this.converters = converters;
 	}
 
+	/**
+	 *
+	 */
 	@Override
 	public void afterPropertiesSet() {
+		//createConversionService() 其实就是创建一个 DefaultConversionService 实例对象
 		this.conversionService = createConversionService();
+		//该方法是将定义的 converter 注册到目标 ConverterRegistry 中，我们知道 ConverterRegistry 是一个 Converter 注册器，他定义了一系列注册方法
 		ConversionServiceFactory.registerConverters(this.converters, this.conversionService);
 	}
 

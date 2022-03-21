@@ -1963,6 +1963,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	/**
 	 * Convert the given value for the specified target property.
+	 *
+	 * @tips 属性转换
+	 * 若 TypeConverter 为 BeanWrapperImpl 类型，则使用 BeanWrapperImpl 来进行类型转换，这里主要是因为 BeanWrapperImpl 实现了 PropertyEditorRegistry 接口。
+	 * 否则则调用 TypeConverter 的 convertIfNecessary() 进行类型转换。TypeConverter 是定义类型转换方法的接口，
+	 * 通常情况下与 PropertyEditorRegistry 配合使用实现类型转换。
+	 * 关于 BeanWrapperImpl 小编后续专门出文分析它。
 	 */
 	@Nullable
 	private Object convertForProperty(

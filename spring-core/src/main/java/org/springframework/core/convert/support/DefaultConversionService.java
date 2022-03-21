@@ -37,6 +37,10 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @author Stephane Nicoll
  * @since 3.1
+ *
+ * @tips DefaultConversionService 是 ConversionService 的默认实现，它继承 GenericConversionService，
+ * GenericConversionService 主要用于转换器的注册和调用，DefaultConversionService 则是为 ConversionService 体系提供一些默认的转换器。
+ * 在 DefaultConversionService 构造方法中就会添加默认的 Converter
  */
 public class DefaultConversionService extends GenericConversionService {
 

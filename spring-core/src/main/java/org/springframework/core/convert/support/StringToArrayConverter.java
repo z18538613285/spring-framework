@@ -56,6 +56,13 @@ final class StringToArrayConverter implements ConditionalGenericConverter {
 				this.conversionService);
 	}
 
+	/**
+	 * @tips 我们看一个子类的实现 StringToArrayConverter，该子类将逗号分隔的 String 转换为 Array
+	 * @param source the source object to convert (may be {@code null})
+	 * @param sourceType the type descriptor of the field we are converting from
+	 * @param targetType the type descriptor of the field we are converting to
+	 * @return
+	 */
 	@Override
 	@Nullable
 	public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
