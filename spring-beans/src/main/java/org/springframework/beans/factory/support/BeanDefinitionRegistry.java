@@ -44,6 +44,11 @@ import org.springframework.core.AliasRegistry;
  * @see org.springframework.context.support.GenericApplicationContext
  * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
  * @see PropertiesBeanDefinitionReader
+ *
+ * @tips 向注册表中注册 BeanDefinition 实例，完成注册的过程。
+ * BeanDefinitionRegistry 继承了 AliasRegistry 接口，其核心子类有三个：SimpleBeanDefinitionRegistry、DefaultListableBeanFactory、GenericApplicationContext。
+ *
+ * BeanDefinitionRegistry 接口定义了关于 BeanDefinition 注册、注销、查询等一系列的操作。
  */
 public interface BeanDefinitionRegistry extends AliasRegistry {
 
@@ -58,6 +63,8 @@ public interface BeanDefinitionRegistry extends AliasRegistry {
 	 * @see GenericBeanDefinition
 	 * @see RootBeanDefinition
 	 * @see ChildBeanDefinition
+	 *
+	 * @tips 往注册表中注册一个新的 BeanDefinition 实例
 	 */
 	void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 			throws BeanDefinitionStoreException;

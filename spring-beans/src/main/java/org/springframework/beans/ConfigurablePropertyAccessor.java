@@ -30,6 +30,9 @@ import org.springframework.lang.Nullable;
  * @author Stephane Nicoll
  * @since 2.0
  * @see BeanWrapper
+ *
+ * @tips BeanWrapper 继承 ConfigurablePropertyAccessor 接口，该接口除了继承上面介绍的三个接口外还集成了 Spring 的 ConversionService 类型转换体系。
+ * setConversionService() 和 getConversionService() 则是用于集成 Spring 的 ConversionService 类型转换体系。
  */
 public interface ConfigurablePropertyAccessor extends PropertyAccessor, PropertyEditorRegistry, TypeConverter {
 

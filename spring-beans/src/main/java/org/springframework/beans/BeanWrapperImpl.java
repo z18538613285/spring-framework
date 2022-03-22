@@ -59,6 +59,8 @@ import org.springframework.util.ReflectionUtils;
  * @see #getPropertyType
  * @see BeanWrapper
  * @see PropertyEditorRegistrySupport
+ *
+ * @tips BeanWrapper 接口的默认实现，用于对Bean的包装，实现上面接口所定义的功能很简单包括设置获取被包装的对象，获取被包装bean的属性描述器
  */
 public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements BeanWrapper {
 

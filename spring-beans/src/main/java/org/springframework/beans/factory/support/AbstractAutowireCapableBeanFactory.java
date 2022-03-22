@@ -1272,8 +1272,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
 		}
-
-
 		/**
 		 * 实例化 bean 是一个复杂的过程，其主要的逻辑为：
 		 *
@@ -1456,8 +1454,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						getAccessControlContext());
 			}
 			else {
+				//在 bean 实例被 InstantiatioonStrategy 创建出来后，Spring 容器会将 Bean 实例通过 BeanWrapper 包裹起来，
+				// 是通过 BeanWrapper.setWrappedInstance() 完成的，如下：
 				beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, this);
 			}
+			//beanInstance 就是我们实例出来的 bean 实例，通过构造一个 BeanWrapper 实例对象进行包裹
 			BeanWrapper bw = new BeanWrapperImpl(beanInstance);
 			initBeanWrapper(bw);
 			return bw;

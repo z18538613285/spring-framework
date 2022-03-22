@@ -50,6 +50,9 @@ import org.springframework.util.StringUtils;
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 1.1
+ *
+ * @tips 类 CglibSubclassingInstantiationStrategy 为 Spring 实例化 bean 的默认实例化策略，
+ * 其主要功能还是对父类功能进行补充：其父类将 CGLIB 的实例化策略委托其实现。
  */
 public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationStrategy {
 
@@ -90,9 +93,12 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 	/**
 	 * An inner class created for historical reasons to avoid external CGLIB dependency
 	 * in Spring versions earlier than 3.2.
+	 *
+	 * @tips CglibSubclassingInstantiationStrategy 实例化 bean 策略是通过其内部类 CglibSubclassCreator 来实现的。
 	 */
 	private static class CglibSubclassCreator {
 
+		// 这里又定义了两个熟悉的拦截器 ：LookupOverrideMethodInterceptor 和 ReplaceOverrideMethodInterceptor，两个拦截器分别对应两个不同的 callback 业务
 		private static final Class<?>[] CALLBACK_TYPES = new Class<?>[]
 				{NoOp.class, LookupOverrideMethodInterceptor.class, ReplaceOverrideMethodInterceptor.class};
 
@@ -113,9 +119,13 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 		 * @param args arguments to use for the constructor.
 		 * Ignored if the {@code ctor} parameter is {@code null}.
 		 * @return new instance of the dynamically generated subclass
+		 *
+		 * @tips 创建 CglibSubclassCreator 实例然后调用其 instantiate()，该方法用于动态创建子类实例，同时实现所需要的 lookups（lookup-method、replace-method）。
+		 *       获取子类增强 class 后，如果 Constructor 实例 ctor 为空，则调用默认构造函数（BeanUtils.instantiateClass()）来实例化类，
+		 *       否则则根据构造函数类型获取具体的构造器，调用 newInstance() 实例化类。
 		 */
 		public Object instantiate(@Nullable Constructor<?> ctor, Object... args) {
-			// 通过 Cglib 创建一个代理类
+			// 通过 Cglib 创建一个代理类 调用 createEnhancedSubclass() 为提供的 BeanDefinition 创建 bean 类的增强子类。
 			Class<?> subclass = createEnhancedSubclass(this.beanDefinition);
 			Object instance;
 			// 没有构造器，通过 BeanUtils 使用默认构造器创建一个bean实例
@@ -148,6 +158,7 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 		 * definition, using CGLIB.
 		 */
 		private Class<?> createEnhancedSubclass(RootBeanDefinition beanDefinition) {
+			// cglib里面的用法，对原始class进行增强，并设置callback
 			Enhancer enhancer = new Enhancer();
 			enhancer.setSuperclass(beanDefinition.getBeanClass());
 			enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
@@ -155,6 +166,13 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 				ClassLoader cl = ((ConfigurableBeanFactory) this.owner).getBeanClassLoader();
 				enhancer.setStrategy(new ClassLoaderAwareGeneratorStrategy(cl));
 			}
+			// 过滤，自定义逻辑来指定调用的callback下标
+			/**
+			 * 通过 MethodOverrideCallbackFilter 来定义调用 callback 类型，MethodOverrideCallbackFilter 是用来定义 CGLIB 回调过滤方法的拦截器行为，
+			 * 它继承 CglibIdentitySupport 实现 CallbackFilter 接口， CallbackFilter 是 CGLIB 的一个回调过滤器，
+			 * CglibIdentitySupport 则为 CGLIB 提供 hashCode() 和 equals() 方法，以确保 CGLIB 不会为每个 bean 生成不同的类。
+			 * MethodOverrideCallbackFilter 实现 CallbackFilter accept()
+			 */
 			enhancer.setCallbackFilter(new MethodOverrideCallbackFilter(beanDefinition));
 			enhancer.setCallbackTypes(CALLBACK_TYPES);
 			return enhancer.createClass();
@@ -250,6 +268,13 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 			super(beanDefinition);
 		}
 
+		/**
+		 * 根据 BeanDefinition 中定义的 MethodOverride 不同，返回不同的值， 这里返回的 PASSTHROUGH 、LOOKUP_OVERRIDE、METHOD_REPLACER 都是 Callbak 数组的下标，
+		 * 这里对应的数组为 CALLBACK_TYPES 数组，
+		 *
+		 * @param method
+		 * @return
+		 */
 		@Override
 		public int accept(Method method) {
 			MethodOverride methodOverride = getBeanDefinition().getMethodOverrides().getOverride(method);

@@ -45,6 +45,25 @@ import java.beans.PropertyDescriptor;
  * @see org.springframework.beans.factory.BeanFactory
  * @see org.springframework.validation.BeanPropertyBindingResult
  * @see org.springframework.validation.DataBinder#initBeanPropertyAccess()
+ *
+ * @tips BeanWrapper 主要继承三个核心接口：PropertyAccessor、PropertyEditorRegistry、TypeConverter。
+ * BeanWrapper 继承上述三个接口，那么它就具有三重身份：
+ *
+ * 属性编辑器
+ * 属性编辑器注册表
+ * 类型转换器
+ * Spring 的 低级 JavaBean 基础结构的接口，一般不会直接使用，而是通过 BeanFactory 或者 DataBinder 隐式使用。
+ * 它提供分析和操作标准 JavaBeans 的操作：获取和设置属性值、获取属性描述符以及查询属性的可读性/可写性的能力。
+ *
+ * 有4个方法比较重要:
+ *
+ * getWrappedInstance()：获取包装对象的实例。
+ * getWrappedClass()：获取包装对象的类型。
+ * getPropertyDescriptors()：获取包装对象所有属性的 PropertyDescriptor 就是这个属性的上下文。
+ * getPropertyDescriptor()：获取包装对象指定属性的上下文。
+ *
+ * BeanWrapper 体系相比于 Spring 中其他体系是比较简单的，它作为 BeanDefinition 向 Bean 转换过程中的中间产物，
+ * 承载了 bean 实例的包装、类型转换、属性的设置以及访问等重要作用。
  */
 public interface BeanWrapper extends ConfigurablePropertyAccessor {
 

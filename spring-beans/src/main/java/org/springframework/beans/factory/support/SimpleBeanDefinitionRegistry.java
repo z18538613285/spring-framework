@@ -33,10 +33,13 @@ import org.springframework.util.StringUtils;
  *
  * @author Juergen Hoeller
  * @since 2.5.2
+ *
+ * @tips SimpleBeanDefinitionRegistry 是 BeanDefinitionRegistry 一个简单的实现，它还继承 SimpleAliasRegistry（ AliasRegistry 的简单实现），
+ * 它仅仅只提供注册表功能，无工厂功能 。
  */
 public class SimpleBeanDefinitionRegistry extends SimpleAliasRegistry implements BeanDefinitionRegistry {
 
-	/** Map of bean definition objects, keyed by bean name. */
+	/** Map of bean definition objects, keyed by bean name. 他对注册其中的 BeanDefinition 都是基于 beanDefinitionMap 这个集合来实现的 */
 	private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(64);
 
 

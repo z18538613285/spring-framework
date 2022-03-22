@@ -57,9 +57,22 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	}
 
 
+	/**
+	 * 如果是构造方法实例化，则是先判断是否有 MethodOverrides，如果没有则是直接使用反射，如果有则就需要 CGLIB 实例化对象
+	 * @param bd the bean definition
+	 * @param beanName the name of the bean when it is created in this context.
+	 * The name can be {@code null} if we are autowiring a bean which doesn't
+	 * belong to the factory.
+	 * @param owner the owning BeanFactory
+	 * @return
+	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		/**
+		 * 对于 MethodOverrides，在 BeanDefinitionParserDelegate 类解析 <bean/> 的时候是否还记得这两个方法：parseLookupOverrideSubElements() 和 parseReplacedMethodSubElements()
+		 * 这两个方法分别用于解析 lookup-method 和 replaced-method。
+		 */
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
@@ -97,6 +110,8 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	 * UnsupportedOperationException, if they can instantiate an object with
 	 * the Method Injection specified in the given RootBeanDefinition.
 	 * Instantiation should use a no-arg constructor.
+	 *
+	 * @tips SimpleInstantiationStrategy 对 instantiateWithMethodInjection() 的实现任务交给了子类 CglibSubclassingInstantiationStrategy。
 	 */
 	protected Object instantiateWithMethodInjection(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		throw new UnsupportedOperationException("Method Injection not supported in SimpleInstantiationStrategy");
@@ -153,6 +168,19 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		throw new UnsupportedOperationException("Method Injection not supported in SimpleInstantiationStrategy");
 	}
 
+	/**
+	 * 如果是工厂方法实例化，则直接使用反射创建对象
+	 * @param bd the bean definition
+	 * @param beanName the name of the bean when it is created in this context.
+	 * The name can be {@code null} if we are autowiring a bean which doesn't
+	 * belong to the factory.
+	 * @param owner the owning BeanFactory
+	 * @param factoryBean the factory bean instance to call the factory method on,
+	 * or {@code null} in case of a static factory method
+	 * @param factoryMethod the factory method to use
+	 * @param args the factory method arguments to apply
+	 * @return
+	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			@Nullable Object factoryBean, final Method factoryMethod, Object... args) {
