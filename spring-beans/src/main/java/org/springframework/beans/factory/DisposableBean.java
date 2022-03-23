@@ -33,6 +33,12 @@ package org.springframework.beans.factory;
  * @see org.springframework.beans.factory.support.RootBeanDefinition#getDestroyMethodName()
  * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#destroySingletons()
  * @see org.springframework.context.ConfigurableApplicationContext#close()
+ *
+ * @tips 与 InitializingBean 和 init-method 用于对象的自定义初始化工作相似，DisposableBean和 destroy-method 则用于对象的自定义销毁工作。
+ *
+ * 当一个 bean 对象经历了实例化、设置属性、初始化阶段,那么该 bean 对象就可以供容器使用了（调用的过程）。
+ * 当完成调用后，如果是 singleton 类型的 bean ，则会看当前 bean 是否应实现了 DisposableBean 接口或者配置了 destroy-method 属性，
+ * 如果是的话，则会为该实例注册一个用于对象销毁的回调方法，便于在这些 singleton 类型的 bean 对象销毁之前执行销毁逻辑。
  */
 public interface DisposableBean {
 

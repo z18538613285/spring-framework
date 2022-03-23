@@ -145,6 +145,10 @@ public class PropertyPlaceholderHelper {
 	 * @param placeholderResolver
 	 * @param visitedPlaceholders
 	 * @return
+	 *
+	 * @tips 调用 PropertyPlaceholderHelper 的 replacePlaceholders() 对占位符进行处理，
+	 * 该方法接收两个参数，一个是待解析的字符串 value ，一个是 PlaceholderResolver 类型的 placeholderResolver，他是定义占位符解析的策略类。
+	 * 其实就是获取占位符 ${} 中间的值，这里面会涉及到一个递归的过程，因为可能会存在这种情况 ${${name}}。
 	 */
 	protected String parseStringValue(
 			String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders) {
@@ -197,6 +201,7 @@ public class PropertyPlaceholderHelper {
 				if (propVal != null) {
 					// Recursive invocation, parsing placeholders contained in the
 					// previously resolved placeholder value.
+					// 递归调用，解析先前解析的占位符值中包含的占位符
 					propVal = parseStringValue(propVal, placeholderResolver, visitedPlaceholders);
 					result.replace(startIndex, endIndex + this.placeholderSuffix.length(), propVal);
 					if (logger.isTraceEnabled()) {

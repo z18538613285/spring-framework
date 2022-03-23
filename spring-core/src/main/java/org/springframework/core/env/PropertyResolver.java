@@ -26,6 +26,7 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  * @see Environment
  * @see PropertySourcesPropertyResolver
+ * @tips 属性解析器，用于解析任何基础源的属性的接口
  */
 public interface PropertyResolver {
 
@@ -98,6 +99,8 @@ public interface PropertyResolver {
 	 * @return the resolved String (never {@code null})
 	 * @throws IllegalArgumentException if given text is {@code null}
 	 * @see #resolveRequiredPlaceholders
+	 *
+	 * @tips 替换文本中的占位符（${key}）到属性值，找不到不解析
 	 */
 	String resolvePlaceholders(String text);
 
@@ -108,6 +111,8 @@ public interface PropertyResolver {
 	 * @return the resolved String (never {@code null})
 	 * @throws IllegalArgumentException if given text is {@code null}
 	 * or if any placeholders are unresolvable
+	 *
+	 * @tips 替换文本中的占位符（${key}）到属性值，找不到抛出异常IllegalArgumentException
 	 */
 	String resolveRequiredPlaceholders(String text) throws IllegalArgumentException;
 

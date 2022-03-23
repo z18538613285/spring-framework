@@ -27,6 +27,15 @@ import org.springframework.lang.Nullable;
  *
  * @author Chris Beams
  * @since 3.1
+ *
+ * @tips 提供属性类型转换的功能
+ * 从 ConfigurablePropertyResolver 所提供的方法来看，除了访问和设置 ConversionService 外，主要还提供了一些解析规则之类的方法。
+ *
+ * 就 Properties 体系而言，PropertyResolver 定义了访问 Properties 属性值的方法，而 ConfigurablePropertyResolver 则定义了解析 Properties 一些
+ * 相关的规则和值进行类型转换所需要的 Service。
+ * 该体系有两个实现者：AbstractPropertyResolver 和 PropertySourcesPropertyResolver，
+ * 其中 AbstractPropertyResolver 为实现的抽象基类，
+ * PropertySourcesPropertyResolver 为真正的实现者。
  */
 public interface ConfigurablePropertyResolver extends PropertyResolver {
 
@@ -41,6 +50,8 @@ public interface ConfigurablePropertyResolver extends PropertyResolver {
 	 * </pre>
 	 * @see PropertyResolver#getProperty(String, Class)
 	 * @see org.springframework.core.convert.converter.ConverterRegistry#addConverter
+	 *
+	 * @tips 返回执行类型转换时使用的 ConfigurableConversionService
 	 */
 	ConfigurableConversionService getConversionService();
 
@@ -84,12 +95,17 @@ public interface ConfigurablePropertyResolver extends PropertyResolver {
 	 * the value set here to determine correct behavior when property values contain
 	 * unresolvable placeholders.
 	 * @since 3.2
+	 *
+	 * @tips 设置当遇到嵌套在给定属性值内的不可解析的占位符时是否抛出异常
+	 *       当属性值包含不可解析的占位符时，getProperty(String)及其变体的实现必须检查此处设置的值以确定正确的行为。
 	 */
 	void setIgnoreUnresolvableNestedPlaceholders(boolean ignoreUnresolvableNestedPlaceholders);
 
 	/**
 	 * Specify which properties must be present, to be verified by
 	 * {@link #validateRequiredProperties()}.
+	 *
+	 * @tips 指定必须存在哪些属性，以便由validateRequiredProperties（）验证
 	 */
 	void setRequiredProperties(String... requiredProperties);
 
@@ -99,6 +115,8 @@ public interface ConfigurablePropertyResolver extends PropertyResolver {
 	 * non-{@code null} value.
 	 * @throws MissingRequiredPropertiesException if any of the required
 	 * properties are not resolvable.
+	 *
+	 * @tips 验证setRequiredProperties指定的每个属性是否存在并解析为非null值
 	 */
 	void validateRequiredProperties() throws MissingRequiredPropertiesException;
 

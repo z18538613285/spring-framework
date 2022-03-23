@@ -30,6 +30,10 @@ package org.springframework.beans.factory;
  * @see DisposableBean
  * @see org.springframework.beans.factory.config.BeanDefinition#getPropertyValues()
  * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getInitMethodName()
+ *
+ * @tips InitializingBean 是一个接口，它为 Spring Bean 的初始化提供了一种方式，它有一个 afterPropertiesSet() 方法，
+ * 在 bean 的初始化进程中会判断当前 bean 是否实现了 InitializingBean，如果实现了则调用 afterPropertiesSet() 进行初始化工作。
+ * 然后再检查是否也指定了 init-method()，如果指定了则通过反射机制调用指定的 init-method()。
  */
 public interface InitializingBean {
 

@@ -38,10 +38,17 @@ import org.springframework.util.SystemPropertyUtils;
  * @author Chris Beams
  * @author Juergen Hoeller
  * @since 3.1
+ *
+ * @tips 解析属性文件的抽象基类
+ * AbstractPropertyResolver 作为基类它仅仅只是设置了一些解析属性文件所需要配置或者转换器，
+ * 如 setConversionService()、setPlaceholderPrefix()、setValueSeparator()，
+ * 其实这些方法的实现都比较简单都是设置或者获取 AbstractPropertyResolver 所提供的属性
  */
 public abstract class AbstractPropertyResolver implements ConfigurablePropertyResolver {
 
 	protected final Log logger = LogFactory.getLog(getClass());
+
+	//这些属性都是 ConfigurablePropertyResolver 接口所提供方法需要的属性，他所提供的方法都是设置和读取这些值，
 
 	@Nullable
 	private volatile ConfigurableConversionService conversionService;
@@ -63,11 +70,11 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 
 	private final Set<String> requiredProperties = new LinkedHashSet<>();
 
-
 	@Override
 	public ConfigurableConversionService getConversionService() {
 		// Need to provide an independent DefaultConversionService, not the
 		// shared DefaultConversionService used by PropertySourcesPropertyResolver.
+		//需要提供独立的DefaultConversionService，而不是PropertySourcesPropertyResolver 使用的共享DefaultConversionService。
 		ConfigurableConversionService cs = this.conversionService;
 		if (cs == null) {
 			synchronized (this) {
@@ -158,6 +165,11 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 		return (getProperty(key) != null);
 	}
 
+	/**
+	 * 而对属性的访问则委托给子类 PropertySourcesPropertyResolver 实现
+	 * @param key the property name to resolve
+	 * @return
+	 */
 	@Override
 	@Nullable
 	public String getProperty(String key) {
@@ -221,20 +233,51 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	 * placeholders, as specified by each of those methods.
 	 * @since 3.2
 	 * @see #setIgnoreUnresolvableNestedPlaceholders
+	 *
+	 * @tips 该方法用于解析给定字符串中的占位符，同时根据 ignoreUnresolvableNestedPlaceholders 的值，
+	 * 来确定是否对不可解析的占位符的处理方法：是忽略还是抛出异常（该值由 setIgnoreUnresolvableNestedPlaceholders() 设置）。
 	 */
 	protected String resolveNestedPlaceholders(String value) {
 		if (value.isEmpty()) {
 			return value;
 		}
+		/**
+		 * 如果 this.ignoreUnresolvableNestedPlaceholders 为 true，则调用 resolvePlaceholders() ，
+		 * 否则调用 resolveRequiredPlaceholders() 但是无论是哪个方法，最终都会到 doResolvePlaceholders()
+		 */
 		return (this.ignoreUnresolvableNestedPlaceholders ?
 				resolvePlaceholders(value) : resolveRequiredPlaceholders(value));
 	}
 
+	/**
+	 * PropertyPlaceholderHelper 是用于处理包含占位符值的字符串，构造该实例需要四个参数：
+	 *
+	 * placeholderPrefix：占位符前缀
+	 * placeholderSuffix：占位符后缀
+	 * valueSeparator：占位符变量与关联的默认值之间的分隔符
+	 * ignoreUnresolvablePlaceholders：指示是否忽略不可解析的占位符（true）或抛出异常（false）
+	 * @param ignoreUnresolvablePlaceholders
+	 * @return
+	 *
+	 * @tips 就 PropertySourcesPropertyResolver 而言，其父类 AbstractPropertyResolver 已经对上述四个值做了定义：
+	 * placeholderPrefix 为 ${，
+	 * placeholderSuffix 为 }，
+	 * valueSeparator 为 :，
+	 * ignoreUnresolvablePlaceholders 默认为 false，
+	 * 当然我们也可以使用相应的 setter 方法自定义。
+	 */
 	private PropertyPlaceholderHelper createPlaceholderHelper(boolean ignoreUnresolvablePlaceholders) {
 		return new PropertyPlaceholderHelper(this.placeholderPrefix, this.placeholderSuffix,
 				this.valueSeparator, ignoreUnresolvablePlaceholders);
 	}
 
+	/**
+	 * String 类型的 text：待解析的字符串
+	 * PropertyPlaceholderHelper 类型的 helper：用于解析占位符的工具类。
+	 * @param text
+	 * @param helper
+	 * @return
+	 */
 	private String doResolvePlaceholders(String text, PropertyPlaceholderHelper helper) {
 		return helper.replacePlaceholders(text, this::getPropertyAsRawString);
 	}
@@ -246,6 +289,10 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	 * @return the converted value, or the original value if no conversion
 	 * is necessary
 	 * @since 4.3.5
+	 *
+	 * @tips 首先获取类型转换服务 conversionService ，若为空，则判断是否可以通过反射来设置，
+	 * 如果可以则直接强转返回，否则构造一个 DefaultConversionService 实例，最后调用其 convert() 完成类型转换，
+	 * 后续就是 Spring 类型转换体系的事情了，
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable

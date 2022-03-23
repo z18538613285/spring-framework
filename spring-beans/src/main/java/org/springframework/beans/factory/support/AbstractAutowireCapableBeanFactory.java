@@ -2129,6 +2129,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					throw pae.getException();
 				}
 			}
+			/**
+			 * 在 bean 的初始化进程中会判断当前 bean 是否实现了 InitializingBean，如果实现了则调用 afterPropertiesSet() 进行初始化工作。
+			 * 然后再检查是否也指定了 init-method()，如果指定了则通过反射机制调用指定的 init-method()。
+			 * ，虽然上面两种方式都可以实现初始化定制化，但是更加推崇 init-method 方式，因为对于 InitializingBean 接口而言，
+			 * 他需要 bean 去实现接口，这样就会污染我们的应用程序，显得 Spring 具有一定的侵入性。但是由于 init-method 是采用反射的方式，
+			 * 所以执行效率上相对于 InitializingBean 接口回调的方式可能会低一些。
+			 */
 			else {
 				// 属性初始化的处理
 				// 直接调用 afterPropertiesSet()
