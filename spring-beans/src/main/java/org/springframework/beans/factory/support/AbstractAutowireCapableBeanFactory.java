@@ -171,6 +171,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	public AbstractAutowireCapableBeanFactory() {
 		super();
+		/**
+		 * 忽略给定接口的自动装配功能
+		 */
+
 		ignoreDependencyInterface(BeanNameAware.class);
 		ignoreDependencyInterface(BeanFactoryAware.class);
 		ignoreDependencyInterface(BeanClassLoaderAware.class);
@@ -272,6 +276,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * For further types to ignore, invoke this method for each type.
 	 * @see org.springframework.beans.factory.BeanFactoryAware
 	 * @see org.springframework.context.ApplicationContextAware
+	 *
+	 * @tips 主要功能是忽略给定接口的自动装配功能，目的是什么？
+	 * 举例来说，当 A 中有属性 ，那么 Spring 在获取 A 的 Bean 的时候如果其属性 B 还没有
+	 * 初始化，那么 Spring 会自动初始化 B，这也是 Spring 提供的一个重要特性 但是，某些情况
+	 * 下， 不会被初始化，其中的一种情况就是 B 实现了 BeanNameAware 接口。 Spring 中是这样
+	 * 介绍的：自动装配时忽略给定的依赖接口，典型应用是通过其他方式解析 Application 上下文注
+	 * 册依赖，类似于 BeanFactory 通过 BeanFactoryAware 进行注入或者 ApplicationContext 通过
+	 * ApplicationContextAware 进行注入
 	 */
 	public void ignoreDependencyInterface(Class<?> ifc) {
 		this.ignoredDependencyInterfaces.add(ifc);
@@ -556,6 +568,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// AOP 的功能就是基于这个地方
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			//如果代理对象不为空，则直接返回代理对象，这一步骤有非常重要的作用，Spring 后续实现 AOP 就是基于这个地方判断的。
+			// 一种短路操作
 			if (bean != null) {
 				return bean;
 			}
@@ -1222,6 +1235,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param beanName the name of the bean
 	 * @return the bean object to use instead of a default instance of the target bean, or {@code null}
 	 * @see InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation
+	 *
+	 * @tips bean的实例化前调用 也就是将 AbstractBeanDefinition转换为 BeanWrapper前的处理。
+	 * 给子类一个修改BeanDefinition的机会，也就是说当程序进过和这个方法后，bean可能已经不是我们认为的bean了，
+	 * 而是或许成为了一个经过处理的代理bean，可能是通过 cglib 生成的，也可能是通过其它技术生成的，直接返回，不会进行下面的创建bean的流程
 	 */
 	@Nullable
 	protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {

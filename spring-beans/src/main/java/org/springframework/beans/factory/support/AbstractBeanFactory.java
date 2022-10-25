@@ -261,7 +261,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
 
-		// 获取 beanName，这里是一个转换动作，将 name 转换Wie beanName
+		// 获取 beanName，这里是一个转换动作，将 name 转换为 beanName
 		//1.获取 beanName
 		String beanName = transformedBeanName(name);
 		Object bean;
@@ -270,6 +270,28 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// 从缓存中或者实例工厂中获取 bean
 		// *** 这里会涉及到解决循环依赖 bean 的问题
 		// 2.从单例 bean 缓存中获取 bean
+		/**
+		 * 检查缓存中合作和实例工厂中是否有对应的实例，为什么首先使用这段代码呢？
+		 * 因为在创建单例bean的时候会存在依赖注入的情况，而在创建依赖的时候为了避免循环依赖，
+		 * Spring创建bean的原则是不等 bean 创建完成就会将创建 bean 的 ObjectFactory提前曝光
+		 * 也就是将 ObjectFactory 加入缓存中，一旦下个 bean 创建时候需要依赖上个bean则直接使用 ObjectFactory
+		 *
+		 * 构造器注入构成的循环依赖，是无法解决的，只能抛出异常 BeanCurrentlyInCreationException异常表示循环依赖
+		 *
+		 * Spring将每一个正在创建的 bean 标识符放在一个 “当前创建bean池中”singletonsCurrentlyInCreation
+		 * 因此如果再创建bean的过程中发现自己已经在池中，就会抛出异常
+		 * 而对创建完毕的bean将从池中清楚掉
+		 *
+		 * 通过setter注入方法构成的循环依赖，对于setter注入造成的依赖是通过Spring容器提前暴露刚完成构造器注入但未完成
+		 * 其它步骤（如setter注入）的bean来完成的，而且只能解决单例作用域的bean的循环依赖，通过提前暴露一个单例工厂方法，从而使
+		 * 其它bean能引用到该bean addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
+		 * AbstractAutowireCapableBeanFactory#doCreateBean(String,RootBeanDefinition, Object[])
+		 * 对于单例bean，可以通过 “setAllowCircularReference(false)”禁用循环引用
+		 *
+		 * 对于 “prototype”作用域的bean，Spring无法完成依赖注入，因为Spring容器不进行缓存该作用域的bean，
+		 * 因此也无法提前暴露一个创建中的bean
+		 */
+		// 直接尝试从缓存获取或者 singletonFactories 中的 ObjectFactory 中获取
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -287,6 +309,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			 * 如果从缓存中得到了 bean，则需要调用 getObjectForBeanInstance() 对 bean 进行实例化处理，
 			 * 因为缓存中记录的是最原始的 bean 状态，我们得到的不一定是我们最终想要的 bean。
 			 */
+			// 返回对应的实例，有时候存在诸如 BeanFactory 的情况并不是直接返回实例本身而是返回指定方法返回的实例
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 		/**
@@ -343,7 +366,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 				else if (args != null) {
 					// Delegation to parent with explicit args.
-					// 委托给构造函数 getBean() 处理
+					// 委托给构造函数 getBean() 处理，递归到BeanFactory中寻找
 					return (T) parentBeanFactory.getBean(nameToLookup, args);
 				}
 				else if (requiredType != null) {
@@ -366,7 +389,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// 从容器中获取 beanName 相应的 GenericBeanDefinition，并将其转换为 RootBeanDefinition
 				//获取 RootBeanDefinition
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
-				// 检查给定的合并的 BeanDefinition
+				// 如果指定的 beanName是子bean 会合并父类的相关属性 检查给定的合并的 BeanDefinition
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
@@ -490,6 +513,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// Check if required type matches the type of the actual bean instance.
 		// 检查需要的类型是否符合 bean 的实际类型
+		// 比如返回的bean 是个String，但是requiredType 却传入Integer
 		if (requiredType != null && !requiredType.isInstance(bean)) {
 			try {
 				T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
@@ -1816,11 +1840,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
 			// Caches object obtained from FactoryBean if it is a singleton.
 			if (mbd == null && containsBeanDefinition(beanName)) {
+				// 将存储在XML 配置文件的 GernericBeanDefinition 转换为 RootBeanDefinition
+				// 如果指定 BeanName 是子 Bean的话，同时会合并父类的相关属性
 				mbd = getMergedLocalBeanDefinition(beanName);
 			}
 			// 是否是用户定义的而不是应用程序本身定义的
 			boolean synthetic = (mbd != null && mbd.isSynthetic());
 			// 核心处理类
+			// 将从 Factoy 中解析 bean的工作委托给 该方法
 			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
 		}
 		return object;

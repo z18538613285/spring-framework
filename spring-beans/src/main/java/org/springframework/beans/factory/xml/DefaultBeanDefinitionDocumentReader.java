@@ -359,7 +359,9 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * Process the given alias element, registering the alias with the registry.
 	 */
 	protected void processAliasRegistration(Element ele) {
+		// 获取 beanName
 		String name = ele.getAttribute(NAME_ATTRIBUTE);
+		// 获取 alias
 		String alias = ele.getAttribute(ALIAS_ATTRIBUTE);
 		boolean valid = true;
 		if (!StringUtils.hasText(name)) {
@@ -372,6 +374,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		}
 		if (valid) {
 			try {
+				// 注册alias
 				getReaderContext().getRegistry().registerAlias(name, alias);
 			}
 			catch (Exception ex) {
@@ -392,6 +395,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * 如果解析成功则返回 BeanDefinitionHolder 实例 bdHolder。BeanDefinitionHolder 为持有 name 和 alias 的 BeanDefinition。
 	 *
 	 * 若实例 bdHolder 不为空，则调用 BeanDefinitionParserDelegate.decorateBeanDefinitionIfRequired() 进行自定义标签处理
+	 * 若存在默认标签的子节点下再有自定义属性需要再次对自定义标签进行解析
 	 *
 	 * 解析完成后，则调用 BeanDefinitionReaderUtils.registerBeanDefinition() 对 bdHolder 进行注册
 	 *
@@ -401,6 +405,9 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
+			/**
+			 * 对于配置文件，解析已经完成，装饰也已经完成，可以注册了
+			 */
 			try {
 				// Register the final decorated instance.
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
@@ -410,6 +417,11 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 						bdHolder.getBeanName() + "'", ele, ex);
 			}
 			// Send registration event.
+			/**
+			 * ，这里的实现只为扩展，当程序开发人员需要对注册 BeanDefinition 事件进行监听
+			 * 时可以通过注册监听器的方式并将处理逻辑写入监听器巾，目前在 Spring 中并没有对此事件做
+			 * 任何逻辑处理
+			 */
 			getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
 		}
 	}

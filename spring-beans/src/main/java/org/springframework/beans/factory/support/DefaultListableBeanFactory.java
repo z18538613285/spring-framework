@@ -920,6 +920,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			try {
 				// 校验 BeanDefinition
 				// 这是注册前的最后一次校验了，主要是对属性 methodOverrides 进行校验
+				// 检验 methodOverrides，是否与工厂方法并存或者 methodOverrides 对饮的方法根本不存在
 				((AbstractBeanDefinition) beanDefinition).validate();
 			}
 			catch (BeanDefinitionValidationException ex) {

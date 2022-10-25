@@ -184,6 +184,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 				}
 			}
 			else {
+				// FactoryBean#getObject
 				object = factory.getObject();
 			}
 		}

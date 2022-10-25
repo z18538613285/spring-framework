@@ -75,6 +75,15 @@ import org.springframework.util.xml.XmlValidationModeDetector;
  * @see BeanDefinitionRegistry
  * @see org.springframework.beans.factory.support.DefaultListableBeanFactory
  * @see org.springframework.context.support.GenericApplicationContext
+ *
+ *
+ * tips:
+ * XmlBeanDefinitionReader 对 XML 配置文件读取的大致流程
+ * 1、通过继承自 AbstractBeanDefinitionReader 中的方法，来使用 ResourceLoader 将资源文件路径转为对应的 Resource 文件
+ * 2、通过 DocumentLoader Resource 文件进行转换，将 Resource 文件转换为 Document 文件
+ * 3. 通过实现接口 BeanDefinitionDocumentReader DefaultBeanDefinitionDocumentReader
+ * Document 进行解析，并使用 BeanDefinitionParserDelegate 对 Element 进行解析
+ *
  */
 public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 

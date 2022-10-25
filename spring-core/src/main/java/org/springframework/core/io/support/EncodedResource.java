@@ -41,6 +41,9 @@ import org.springframework.util.ObjectUtils;
  * @see Resource#getInputStream()
  * @see java.io.Reader
  * @see java.nio.charset.Charset
+ *
+ * @tips 对资服文件的编码进行处理的。其中的主要逻辑体现在 getRead （）方法中， 置了编码属性
+ * 的时候 Spri 吨会使用相应的编码作为输入流的编码
  */
 public class EncodedResource implements InputStreamSource {
 

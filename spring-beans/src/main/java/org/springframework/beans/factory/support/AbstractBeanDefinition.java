@@ -149,11 +149,17 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	private int autowireMode = AUTOWIRE_NO;
 
+
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
 
 	@Nullable
 	private String[] dependsOn;
 
+	/**
+	 * 属性设为false，这样容器在查找自动装配对象时，将不再考虑该 bean，
+	 * 即它不会被考虑作为其它bean自动装配的候选者，但是该bean本身还是可以使用
+	 * 自动装配注入其它 bean的
+	 */
 	private boolean autowireCandidate = true;
 
 	private boolean primary = false;
@@ -163,8 +169,23 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private Supplier<?> instanceSupplier;
 
+	/**
+	 * 允许访问非公开的构造器和方法，程序设置
+	 */
 	private boolean nonPublicAccessAllowed = true;
 
+	/**
+	 * 是否以一种宽松的模式解析构造函数，默认为true
+	 * 如果为false，则在如下情况抛出异常，
+	 * 因为spring无法准确定位那个构造函数
+	 interface ITest {}
+	 * class ITestimpl mplements I Test {} ;
+	 * class Main{
+	 Mai n( ITest i ) { }
+	 Main ( ITestimpl i) {}
+	 *}
+	 * 程序设置
+	 */
 	private boolean lenientConstructorResolution = true;
 
 	@Nullable
@@ -179,6 +200,9 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private MutablePropertyValues propertyValues;
 
+	/**
+	 * 方法重写的持有者，记录 lookup-method，replaced-method元素
+	 */
 	private MethodOverrides methodOverrides = new MethodOverrides();
 
 	@Nullable
@@ -187,18 +211,33 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private String destroyMethodName;
 
+	/**
+	 * 是否执行 init-mthod，程序设置
+	 */
 	private boolean enforceInitMethod = true;
-
+	/**
+	 * 是否执行 destory-method，程序设置
+	 */
 	private boolean enforceDestroyMethod = true;
 
+	/**
+	 * 是否是用户定义的而不是应用程序本身定义的，创建AOP的时候为true，程序设置
+	 */
 	private boolean synthetic = false;
 
+	/**
+	 * 定义这个bean的应用，APPLICATION: 用户，INFRASTRUCTURE:完全内部使用，与用户无关， SUPPORT:某些复杂配置的一部分
+	 * 程序设置
+	 */
 	private int role = BeanDefinition.ROLE_APPLICATION;
 
 	@Nullable
 	private String description;
 
 	@Nullable
+	/**
+	 * 这个bean定义的资源
+	 */
 	private Resource resource;
 
 
@@ -1111,6 +1150,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		else if (count == 1) {
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			// 标记 MethodOverride 暂未被覆盖，避免参数类型检查的开销
 			mo.setOverloaded(false);
 		}
 	}

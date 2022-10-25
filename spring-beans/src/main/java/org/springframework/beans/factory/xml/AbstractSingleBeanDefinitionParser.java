@@ -57,6 +57,9 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 	 * @throws IllegalStateException if the bean {@link Class} returned from
 	 * {@link #getBeanClass(org.w3c.dom.Element)} is {@code null}
 	 * @see #doParse
+	 *
+	 * @tips 这里并不是直接调用自定义的 doParse 函数，而是进行了一系列的数据准备
+	 * 包括对 beanClass、scope、lazyInit 等属性的准备
 	 */
 	@Override
 	protected final AbstractBeanDefinition parseInternal(Element element, ParserContext parserContext) {
@@ -67,7 +70,7 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 		if (parentName != null) {
 			builder.getRawBeanDefinition().setParentName(parentName);
 		}
-		// 获取自定义标签中的 class，这个时候会去调用自定义解析中的 getBeanClass()
+		// 获取自定义标签中的 class，这个时候会去调用自定义解析（如UserBeanDefinitionParser）中的 getBeanClass()
 		Class<?> beanClass = getBeanClass(element);
 		if (beanClass != null) {
 			builder.getRawBeanDefinition().setBeanClass(beanClass);
@@ -81,10 +84,12 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 		}
 		builder.getRawBeanDefinition().setSource(parserContext.extractSource(element));
 		BeanDefinition containingBd = parserContext.getContainingBeanDefinition();
+		// 若存在父类则使用父类的 scope 属性
 		if (containingBd != null) {
 			// Inner bean definition must receive same scope as containing bean.
 			builder.setScope(containingBd.getScope());
 		}
+		// 配置延迟加载
 		if (parserContext.isDefaultLazyInit()) {
 			// Default-lazy-init applies to custom bean definitions as well.
 			builder.setLazyInit(true);
