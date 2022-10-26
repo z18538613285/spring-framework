@@ -120,6 +120,9 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	/**
 	 * 如果该 bean 没有配置 lookup-method、replaced-method 标签或者 @Lookup 注解，则直接通过反射的方式实例化 bean 即可，方便快捷，
 	 * 但是如果存在需要覆盖的方法或者动态替换的方法则需要使用 CGLIB 进行动态代理，因为可以在创建代理的同时将动态方法织入类中。
+	 * 这样才可以保证在调用方法的时候会被相应的连接增强，返回值为包含拦截器的代理实例：
+	 * new LookupOverrideMethodInterceptor
+	 * new ReplaceOverrideMethodInterceptor
 	 * 反射 调用工具类 BeanUtils 的 instantiateClass() 方法完成反射工作：
 	 *
 	 * @param bd the bean definition
@@ -130,6 +133,8 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	 * @param ctor the constructor to use
 	 * @param args the constructor arguments to apply
 	 * @return
+	 *
+	 * @tips
 	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,

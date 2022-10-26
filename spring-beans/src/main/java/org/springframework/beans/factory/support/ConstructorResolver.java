@@ -130,6 +130,7 @@ class ConstructorResolver {
 		Constructor<?> constructorToUse = null;
 		// 构造参数
 		ArgumentsHolder argsHolderToUse = null;
+		// 构造函数参数
 		Object[] argsToUse = null;
 
 		/*
@@ -140,6 +141,7 @@ class ConstructorResolver {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 如果在 getbean方法中没有指定则尝试从配置文件中解析
 			Object[] argsToResolve = null;
 			synchronized (mbd.constructorArgumentLock) {
 				// 获取缓存中的构造函数或者工厂方法
@@ -157,20 +159,29 @@ class ConstructorResolver {
 			// 缓存中存在,则解析存储在 BeanDefinition 中的参数
 			// 如给定方法的构造函数 A(int ,int )，则通过此方法后就会把配置文件中的("1","1")转换为 (1,1)
 			// 缓存中的值可能是原始值也有可能是最终值
+			/**
+			 * 在缓存中缓存的可能是参数的最终类型也可能是参数的初始类型，
+			 * 例如：构造函数参数要求的是 int 类型，但是原始的参数值可能是String类型的 “1”
+			 * 那么即使在缓存中得到了参数，也需要经过类型转换器的过滤以确保参数类型与对应的构造函数参数类型完全对应
+			 */
 			if (argsToResolve != null) {
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve, true);
 			}
 		}
 
-		/*
+		/**
+		 * 如果不能根据传入的参数 explicitArgs 确定构造函数的参数也无法得到缓存的相关信息
 		 * 没有缓存，则尝试从配置文件中获取
+		 * 参数解析到BeanDefinition中，可以调用 mbd.getConstructorArgumentValues() 来获取配置的构造函数信息
+		 * 有了配置中的信息便可以获取对应的参数值信息了，获取参数值的信息包括直接指定值，
+		 * 如：直接指定函数中某个值为原始类型 String 类型，或者是一个对其它bean的引用，而这一处理
+		 * 委托给 resolverConstructorArgument 方法，并返回能解析到的参数的个数。
 		 */
 		if (constructorToUse == null || argsToUse == null) {
 			// Take specified constructors, if any.
 			/*
 			 * 获取指定的构造函数
 			 */
-			// 根据前面的判断，chosenCtors 应该为 null
 			Constructor<?>[] candidates = chosenCtors;
 
 			if (candidates == null) {
@@ -187,6 +198,7 @@ class ConstructorResolver {
 							"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 				}
 			}
+
 
 			if (candidates.length == 1 && explicitArgs == null && !mbd.hasConstructorArgumentValues()) {
 				Constructor<?> uniqueCandidate = candidates[0];
@@ -249,6 +261,11 @@ class ConstructorResolver {
 				// 参数持有者
 				ArgumentsHolder argsHolder;
 				// 有参数
+				/**
+				 * 由于在配置文件中并不是唯一限制使用参数位置索引的方式去创建，另一种就是使用spring
+				 * 中提供的工具类 ParameterNameDiscoverer 来获取，构造函数、参数名称、参数类型、参数值都确定后，
+				 * 就可以锁定构造函数以及转换对应的参数类型了。
+				 */
 				if (resolvedValues != null) {
 					try {
 						// 注释上获取参数名称
@@ -262,6 +279,7 @@ class ConstructorResolver {
 							}
 						}
 						// 根据构造函数和构造参数创建参数持有者
+						// 使用Spring中提供的类型转换器或者使用用户自定义类型转换器进行转换
 						argsHolder = createArgumentArray(beanName, mbd, resolvedValues, bw, paramTypes, paramNames,
 								getUserDeclaredConstructor(candidate), autowiring, candidates.length == 1);
 					}
@@ -290,6 +308,10 @@ class ConstructorResolver {
 				// 严格模式：解析构造函数时，必须所有的都需要匹配，否则抛出异常
 				// 宽松模式：使用具有"最接近的模式"进行匹配
 				// typeDiffWeight：类型差异权重
+				/**
+				 * 当然有时候即使构造函数、参数名称、参数类型、参数值都确定后也不一定直接锁定构造函数，
+				 * 不同构造函数的参数为父子关系，所以这里又做了一次验证
+				 */
 				int typeDiffWeight = (mbd.isLenientConstructorResolution() ?
 						argsHolder.getTypeDifferenceWeight(paramTypes) : argsHolder.getAssignabilityWeight(paramTypes));
 				// Choose this constructor if it represents the closest match.
@@ -337,10 +359,22 @@ class ConstructorResolver {
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
 		// 将构造的 bean 加入到 BeanWrapper 实例中
+		/**
+		 * 根据实例化策略以及得到的构造函数及构造函数参数实例化 Bean
+		 */
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
 	}
 
+	/**
+	 * 此方法并没有实质性的逻辑，带有参数的实例构造中，Spring把精力都放在了构造函数以及参数的匹配上，
+	 * 所以如果没有参数的话将是非常简单的一件事，直接调用实例化策略进行实例化就可以了
+	 * @param beanName
+	 * @param mbd
+	 * @param constructorToUse
+	 * @param argsToUse
+	 * @return
+	 */
 	private Object instantiate(
 			String beanName, RootBeanDefinition mbd, Constructor<?> constructorToUse, Object[] argsToUse) {
 
@@ -740,6 +774,7 @@ class ConstructorResolver {
 		bw.setBeanInstance(instantiate(beanName, mbd, factoryBean, factoryMethodToUse, argsToUse));
 		return bw;
 	}
+
 
 	private Object instantiate(String beanName, RootBeanDefinition mbd,
 			@Nullable Object factoryBean, Method factoryMethod, Object[] args) {

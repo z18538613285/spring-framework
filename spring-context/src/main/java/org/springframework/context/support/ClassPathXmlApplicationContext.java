@@ -133,6 +133,9 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	 * @param parent the parent context
 	 * @throws BeansException if context creation failed
 	 * @see #refresh()
+	 *
+	 * @tips ClassPathXmlApplicationContext 中可以将配置文件路径以数组
+	 * 的方式传入，它可以对数组进行解析并进行加载，其过程都在 refresh（）实现
 	 */
 	public ClassPathXmlApplicationContext(
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
