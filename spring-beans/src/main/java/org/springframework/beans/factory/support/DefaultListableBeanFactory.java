@@ -836,6 +836,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return (this.configurationFrozen || super.isBeanEligibleForMetadataCaching(beanName));
 	}
 
+	/**
+	 * ApplicationContxt 实现的默认行为就是在启动的时候将所有的单例 bean 提前实例化，
+	 * 这是一件好事，因为这样在配置中的任何错误就会即刻被发现
+	 * @throws BeansException
+	 */
 	@Override
 	public void preInstantiateSingletons() throws BeansException {
 		if (logger.isTraceEnabled()) {

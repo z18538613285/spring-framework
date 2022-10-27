@@ -52,25 +52,56 @@ final class PostProcessorRegistrationDelegate {
 	}
 
 
+	/**
+	 * 对于 BeanFactoryPostProcessor 的处理除妖分为两种情况进行，
+	 * 一个是对于 BeanDefinitionRegistry 类的特殊处理，另一种是对普通的 BeanFactoryPostProcessor进行处理
+	 *
+	 * 对于 BeanDefinitionRegistry类型的处理类的处理主要包括以下内容
+	 * 1、对于硬编码注册的后处理器的处理，主要通过 AbstractApplicationContext 中
+	 * 的添加处理器方法 addBeanFactoryPostProcessor 进行添加
+	 * 2、记录后处理器主要使用 3 个 List 完成
+	 * 		registryPostProcessor 记录通过硬编码方式注册的 BeanDefinitionRegistryPostProcessor 类型的处理器
+	 * 		regularPostProcessor 记录通过硬编码方式注册的 BeanFactoryPostProcessor 类型的处理器
+	 * 		registryPostProcessorBeans 记录通过配置方式注册的 BeanDefinitionRegistryPostProcessor 类型的处理器
+	 * 3、对于以上记录的 List 的后处理器进行统一调用 beanFactoryPostProcessor 的 postProcessBeanFactory
+	 *
+	 * 对于硬编码方式手动添加的后处理器是不需要做任何排序的，但是在配置问阿金中读取的处理器，Spring
+	 * 并不保证读取的顺序。
+	 * 所以，为了保证用户的调用顺序的要求，Spring对于后处理器的调用支持按照 PriorityOrdered 或者 Ordered的顺序调用
+	 *
+	 *
+	 *
+	 * @param beanFactory
+	 * @param beanFactoryPostProcessors
+	 */
 	public static void invokeBeanFactoryPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
 		Set<String> processedBeans = new HashSet<>();
 
+		// 对 BeanDefinitionRegistry 类型的处理
 		if (beanFactory instanceof BeanDefinitionRegistry) {
 			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+			/**
+			 * 硬编码注册的后处理器
+			 */
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
 							(BeanDefinitionRegistryPostProcessor) postProcessor;
+					/**
+					 * 对于 BeanDefinitionRegistryPostProcessor 类型，在 BeanFactoryPostProcessor 的
+					 * 基础上还有自己定义的方法，需要先调用
+					 */
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
 					registryProcessors.add(registryProcessor);
 				}
 				else {
+					// 记录常规 BeanFactoryPostProcessor
 					regularPostProcessors.add(postProcessor);
 				}
 			}
@@ -256,6 +287,7 @@ final class PostProcessorRegistrationDelegate {
 		List<BeanPostProcessor> nonOrderedPostProcessors = new ArrayList<>();
 		for (String ppName : nonOrderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
+			// internalPostProcessors 并不会重复注册，后面会进行唯一性校验
 			nonOrderedPostProcessors.add(pp);
 			if (pp instanceof MergedBeanDefinitionPostProcessor) {
 				internalPostProcessors.add(pp);

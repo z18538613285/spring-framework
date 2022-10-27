@@ -691,16 +691,35 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		 * 设置 beanFactory 的表达式语言处理器，Spring3 增加了表达式语言支持，
 		 * 默认可以使用 #{bean.xxx} 的形式来调用相关属性值
 		 *
-		 * Spring 表达式语言
+		 * Spring 表达式语言全称为 Spring Expression Language ，缩写为 SpEL，类似于 Struts 2x 中
+		 * 使用的 OGNL 表达式语言，能在运行时构建复杂表达式、存取对象图属性，对象方法调用等，并且能与Spring 功能完全整合。
+		 * SpEL 是单独模块，只依赖与 core 模块，可以单独使用。
+		 *
+		 * 注册解析器之后就可以对SpEL进行解析了，解析的步骤在 AbstractAutowireCapableBeanFactory类的applyPropertyValues函数。
+		 * 在这个函数中，构造 beanDefinitionValueResolver 类实例进行属性的解析。
+		 * 也是这个步骤中一把通过 AbstractBeanFactory 中的 evaluateBeanDefinitionString 方法去完成 SpEL的解析
 		 */
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 		// 为 beanFactory 增加一个默认的 propertyEditor ，这个主要是对 bean 的属性等设置管理的一个工具
+		/**
+		 * 比如对date属性的值使用“2020-12-12” 这样直接注入会报错，因为类型对不上
+		 * 解决办法：
+		 * 1、使用自定义属性编辑器
+		 * 		继承 PropertyEditorSupport 重写setAsText 方法
+		 * 		将自定义属性注册到Spring中，在配置文件中引入 CustomEditorConfigurer 的bean
+		 * 2、注册Spring自带的属性编辑器 CustomDateEditor
+		 * 		定义属性编辑器 CustomDateEditor，注册到Spring 中
+		 */
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
 		// 增加 BeanPostProcessor
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 		// 设置了几个忽略自动装配的接口
+		/**
+		 * 在 invokeAwareInterfaces 方法中间接调用的 Aware 类已经不是普通的 bean了，
+		 * 那么需要在 Spring 做 bean 的依赖注入的时候忽略它们
+		 */
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
@@ -788,10 +807,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Initialize the MessageSource.
 	 * Use parent's if none defined in this context.
+	 *
+	 * @tips “国际化信息” 也称为 “本地化信息”，一般需要两个条件可以确定一个特定类型的本地化信息，
+	 * 它们分别是 “语言类型” 和 “国家/地区的类型”
+	 * java 通过 java.util.Locale 类表示一个本地化对象 Locale locale = new Locale("zh",""CN);
 	 */
 	protected void initMessageSource() {
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		if (beanFactory.containsLocalBean(MESSAGE_SOURCE_BEAN_NAME)) {
+			// 如果在配置中已经配置了 messageSource 那么将 messageSource 提取并记录 this.messageSource
 			this.messageSource = beanFactory.getBean(MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
 			// Make MessageSource aware of parent MessageSource.
 			if (this.parent != null && this.messageSource instanceof HierarchicalMessageSource) {
@@ -808,6 +832,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 		else {
 			// Use empty MessageSource to be able to accept getMessage calls.
+			// 如果用户并没有定义配置文件，那么使用临时的 DelegatingMessageSource 以便于作为调用 getMessage 方法的返回
 			DelegatingMessageSource dms = new DelegatingMessageSource();
 			dms.setParentMessageSource(getInternalParentMessageSource());
 			this.messageSource = dms;
@@ -822,6 +847,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Initialize the ApplicationEventMulticaster.
 	 * Uses SimpleApplicationEventMulticaster if none defined in the context.
 	 * @see org.springframework.context.event.SimpleApplicationEventMulticaster
+	 *
+	 * @tips 如果用户自定义了事件广播器，使用它，否则使用默认的 SimpleApplicationEventMulticaster
 	 */
 	protected void initApplicationEventMulticaster() {
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
@@ -885,12 +912,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void registerListeners() {
 		// Register statically specified listeners first.
+		// 硬编码方式注册的监听器处理
 		for (ApplicationListener<?> listener : getApplicationListeners()) {
 			getApplicationEventMulticaster().addApplicationListener(listener);
 		}
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let post-processors apply to them!
+		// 配置文件注册的监听器处理
 		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
 		for (String listenerBeanName : listenerBeanNames) {
 			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
@@ -909,9 +938,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Finish the initialization of this context's bean factory,
 	 * initializing all remaining singleton beans.
+	 *
+	 * @tips 完成 BeanFactory 的初始化工作，其中包括 ConversionService 的设置、配置冻结以及
+	 * 非延迟加载的 bean 的初始化工作
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
+		/**
+		 * 之前提到使用自定义类型转换器从 String 转换为 Date 的方式，在Spring中还提供了另一种
+		 * 转换方式，使用 Converter，它与ConversionService配合使用
+		 */
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(
@@ -935,9 +971,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.setTempClassLoader(null);
 
 		// Allow for caching all bean definition metadata, not expecting further changes.
+		// 冻结所有的 bean 的定义，说明注册的 bean定义将不被修改或任何进一步的处理
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
+		// 初始化剩下的单实例（非惰性的）
 		beanFactory.preInstantiateSingletons();
 	}
 
@@ -945,18 +983,31 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Finish the refresh of this context, invoking the LifecycleProcessor's
 	 * onRefresh() method and publishing the
 	 * {@link org.springframework.context.event.ContextRefreshedEvent}.
+	 *
+	 * @tips Lifecycle 接口中包含 start/stop 方法，实现此接口后，Spring会保证在启动的
+	 * 时候调用其 start 方法开始声明周期，并在Spring关闭的时候调用 stop 方法来结束声明周期，
+	 * 通常用来配置后台程序，在启动后一直运行（如对 MQ进行轮训等）
 	 */
 	protected void finishRefresh() {
 		// Clear context-level resource caches (such as ASM metadata from scanning).
 		clearResourceCaches();
 
 		// Initialize lifecycle processor for this context.
+		/**
+		 * 当 ApplicationContext 启动或停止时，它会通过 LifecycleProcessor来与所有声明的bean的周期做状态更新，
+		 * 而在 LifecycleProcessor 的使用首先需要初始化。
+		 */
 		initLifecycleProcessor();
 
 		// Propagate refresh to lifecycle processor first.
+		// 启动所有实现了 Lifecycle 接口的 bean
 		getLifecycleProcessor().onRefresh();
 
 		// Publish the final event.
+		/**
+		 * 当完成 ApplicationContext 初始化的时候，要通过 Spring 中的事件发布机制
+		 * 来发出 ContextRefreshedEvent事件，以保证对应的监听器可以做进一步的逻辑处理
+		 */
 		publishEvent(new ContextRefreshedEvent(this));
 
 		// Participate in LiveBeansView MBean, if active.

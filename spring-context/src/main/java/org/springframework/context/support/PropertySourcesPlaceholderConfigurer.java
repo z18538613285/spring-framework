@@ -123,6 +123,10 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	 * <p>If {@link #setPropertySources} is called, <strong>environment and local properties will be
 	 * ignored</strong>. This method is designed to give the user fine-grained control over property
 	 * sources, and once set, the configurer makes no assumptions about adding additional sources.
+	 *
+	 * @tips 通过替换${…}占位符在bean定义中，方法是根据这个配置器的propertysource集合解析每个占位符，其中包括:
+	 * 所有环境属性源(如果存在一个环境) 合并的本地属性(如果已指定的话)
+	 *
 	 */
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
@@ -141,7 +145,10 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 			}
 			try {
 				PropertySource<?> localPropertySource =
-						new PropertiesPropertySource(LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME, mergeProperties());
+
+						new PropertiesPropertySource(LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME,
+								// 得到配置
+								mergeProperties());
 				if (this.localOverride) {
 					this.propertySources.addFirst(localPropertySource);
 				}
@@ -154,7 +161,10 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 			}
 		}
 
-		processProperties(beanFactory, new PropertySourcesPropertyResolver(this.propertySources));
+		// 最后将配置内容告知 BeanFactory
+		processProperties(beanFactory,
+				// 将得到的配置转换为合适的类型
+				new PropertySourcesPropertyResolver(this.propertySources));
 		this.appliedPropertySources = this.propertySources;
 	}
 

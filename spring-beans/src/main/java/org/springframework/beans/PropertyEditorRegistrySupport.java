@@ -196,6 +196,9 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 
 	/**
 	 * Actually register the default editors for this registry instance.
+	 *
+	 * @tips 定义了一系列的属性编辑器使我们方便的进行配置，
+	 * 如果我们定义的bean 中的某个属性的类型不在下面的配置中，才需要我们进行个性化属性编辑器的注册
 	 */
 	private void createDefaultEditors() {
 		this.defaultEditors = new HashMap<>(64);

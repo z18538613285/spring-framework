@@ -111,6 +111,7 @@ class BeanDefinitionValueResolver {
 		}
 		else if (value instanceof RuntimeBeanNameReference) {
 			String refName = ((RuntimeBeanNameReference) value).getBeanName();
+			// 解析 SpEL 表达式
 			refName = String.valueOf(doEvaluate(refName));
 			if (!this.beanFactory.containsBean(refName)) {
 				throw new BeanDefinitionStoreException(

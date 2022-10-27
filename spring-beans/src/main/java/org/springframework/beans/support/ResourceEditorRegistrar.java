@@ -96,6 +96,8 @@ public class ResourceEditorRegistrar implements PropertyEditorRegistrar {
 	 * @see org.springframework.beans.propertyeditors.ClassEditor
 	 * @see org.springframework.beans.propertyeditors.ClassArrayEditor
 	 * @see org.springframework.core.io.support.ResourceArrayPropertyEditor
+	 *
+	 * @tips 这里实现批量注册的功能，是
 	 */
 	@Override
 	public void registerCustomEditors(PropertyEditorRegistry registry) {

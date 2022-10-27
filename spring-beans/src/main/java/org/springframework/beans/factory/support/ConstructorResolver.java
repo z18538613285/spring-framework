@@ -124,6 +124,8 @@ class ConstructorResolver {
 
 		// 封装 BeanWrapperImpl  并完成初始化
 		BeanWrapperImpl bw = new BeanWrapperImpl();
+		// beanWrapper的初始化，里面会开始注册Spring自定义的属性注册器
+		// 注册后，在属性填充的环节便可以直接让 Spring 使用这些编辑器进行属性的解析了。
 		this.beanFactory.initBeanWrapper(bw);
 
 		// 构造函数

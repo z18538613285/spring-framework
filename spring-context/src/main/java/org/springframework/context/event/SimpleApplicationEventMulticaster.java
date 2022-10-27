@@ -127,6 +127,12 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		multicastEvent(event, resolveDefaultEventType(event));
 	}
 
+	/**
+	 * 当产生 Sprign 事件的时候会默认使用 SimpleApplicationEventMulticaster 的multicastEvent 来
+	 * 广播事件，遍历所有监听器，并使用监听器的 onApplicationEvent 方法进行监听器的处理
+	 * @param event the event to multicast
+	 * @param eventType the type of event (can be null)
+	 */
 	@Override
 	public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
