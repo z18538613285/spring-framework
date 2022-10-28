@@ -80,18 +80,31 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	private Boolean isAfterAdvice;
 
 
+	/**
+	 * 根据切点信息生成增强，所有的增强都由 Advisor 的实现类 InstantiationModelAwarePointcutAdvisorImpl
+	 * @param declaredPointcut
+	 * @param aspectJAdviceMethod
+	 * @param aspectJAdvisorFactory
+	 * @param aspectInstanceFactory
+	 * @param declarationOrder
+	 * @param aspectName
+	 */
 	public InstantiationModelAwarePointcutAdvisorImpl(AspectJExpressionPointcut declaredPointcut,
 			Method aspectJAdviceMethod, AspectJAdvisorFactory aspectJAdvisorFactory,
 			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
 
+		// test()
 		this.declaredPointcut = declaredPointcut;
 		this.declaringClass = aspectJAdviceMethod.getDeclaringClass();
+		// public void test.AspectJTest.beforeTest()
 		this.methodName = aspectJAdviceMethod.getName();
 		this.parameterTypes = aspectJAdviceMethod.getParameterTypes();
 		this.aspectJAdviceMethod = aspectJAdviceMethod;
 		this.aspectJAdvisorFactory = aspectJAdvisorFactory;
 		this.aspectInstanceFactory = aspectInstanceFactory;
+		// 0
 		this.declarationOrder = declarationOrder;
+		// test.AspectJTest
 		this.aspectName = aspectName;
 
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
@@ -110,6 +123,13 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 			// A singleton aspect.
 			this.pointcut = this.declaredPointcut;
 			this.lazy = false;
+			/**
+			 * 在封装过程中知识简单地将信息封装在类的实例中，所有的信息单纯的赋值，在实例初始化的过程中还完成了
+			 * 对于增强器的初始化。
+			 * 因为不同的增强所体现的逻辑是不同的，比如 @Before("test()") 与 @After("test()") 标签的不同就是
+			 * 增强器增强的位置不同，所以就需要不同的增强器来完成不同的逻辑，
+			 * 而根据注解中信息初始化随影的增强器就是在 instantiateAdvice 函数中实现的
+			 */
 			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
 		}
 	}

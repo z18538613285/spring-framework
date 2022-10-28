@@ -105,8 +105,12 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * @param classLoader the class loader to create the proxy with
 	 * (or {@code null} for the low-level proxy facility's default)
 	 * @return the proxy object
+	 *
+	 * @tips 由于Spring 中涉及过多的拦截器，增强器、增强方法等方式来对逻辑进行增强，所以非常有
+	 * 必要统一封装成 Advisor 来进行代理的创建，完成了增强的封装过程，那么解析最重要的一步就是代理的创建与获取。
 	 */
 	public Object getProxy(@Nullable ClassLoader classLoader) {
+		// 得到的代理分为 CglibAopProcy 和 JdkDynamicAopProxy
 		return createAopProxy().getProxy(classLoader);
 	}
 

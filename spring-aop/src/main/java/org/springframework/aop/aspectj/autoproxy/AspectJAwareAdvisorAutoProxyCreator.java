@@ -42,6 +42,10 @@ import org.springframework.util.ClassUtils;
  * @author Juergen Hoeller
  * @author Ramnivas Laddad
  * @since 2.0
+ *
+ * @tips 在类的层级中，我们看到 AnnotationAwareAspectJAutoProxyCreator 实现了 BeanPostProcess接口，
+ * 而实现 BeanPostProcessor 后，当Spring加载这个 Bean 时会在实例化前调用其 postProcessorAfterInitialization 方法，
+ * 而这也是 AOP 的开始，在父类 AbstractAutoProxyCreator 的 postProcessorAfterInitialization中生成代理对象
  */
 @SuppressWarnings("serial")
 public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator {
