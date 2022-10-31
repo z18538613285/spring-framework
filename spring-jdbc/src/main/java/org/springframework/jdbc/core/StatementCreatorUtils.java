@@ -193,6 +193,8 @@ public abstract class StatementCreatorUtils {
 	 * @param inValue the value to set (plain value or an SqlTypeValue)
 	 * @throws SQLException if thrown by PreparedStatement methods
 	 * @see SqlTypeValue
+	 *
+	 * @tips 对单个参数及类型的匹配处理
 	 */
 	private static void setParameterValueInternal(PreparedStatement ps, int paramIndex, int sqlType,
 			@Nullable String typeName, @Nullable Integer scale, @Nullable Object inValue) throws SQLException {

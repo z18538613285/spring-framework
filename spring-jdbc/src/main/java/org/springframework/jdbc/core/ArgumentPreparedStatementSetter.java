@@ -45,8 +45,10 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 	@Override
 	public void setValues(PreparedStatement ps) throws SQLException {
 		if (this.args != null) {
+			// 遍历每个参数来进行类型匹配及转换
 			for (int i = 0; i < this.args.length; i++) {
 				Object arg = this.args[i];
+				// 解析当前属性
 				doSetValue(ps, i + 1, arg);
 			}
 		}
