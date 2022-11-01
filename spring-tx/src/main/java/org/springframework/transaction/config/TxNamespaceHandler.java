@@ -53,6 +53,10 @@ public class TxNamespaceHandler extends NamespaceHandlerSupport {
 	@Override
 	public void init() {
 		registerBeanDefinitionParser("advice", new TxAdviceBeanDefinitionParser());
+		/**
+		 * 默认情况下 Spring 中的事务处理只对 RuntimeException 方法进行回滚。
+		 * 对于 Spring 事务功能的入口在配置 <tx:annotation-driven/>
+		 */
 		registerBeanDefinitionParser("annotation-driven", new AnnotationDrivenBeanDefinitionParser());
 		registerBeanDefinitionParser("jta-transaction-manager", new JtaTransactionManagerBeanDefinitionParser());
 	}

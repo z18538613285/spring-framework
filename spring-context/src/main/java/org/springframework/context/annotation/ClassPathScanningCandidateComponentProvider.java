@@ -412,6 +412,12 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		return candidates;
 	}
 
+	/**
+	 * 根据传入的包路径信息并结合类文件路径拼接成文件的绝对路径，同时完成了文件的扫描过程并且根据对应的文件生成了
+	 * 对应的 bean，使用 ScannedGenericBeanDefinition 类型的 bean 承载信息，bean 中只记录了 resource和 source信息。
+	 * @param basePackage
+	 * @return
+	 */
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
@@ -427,6 +433,10 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				if (resource.isReadable()) {
 					try {
 						MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+						/**
+						 * 这个代码用于判断当前扫描的文件是否符合要求，而我们之前注册的一些
+						 * 过滤器信息也是在这里派上用场的
+						 */
 						if (isCandidateComponent(metadataReader)) {
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
@@ -484,6 +494,10 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * and does match at least one include filter.
 	 * @param metadataReader the ASM ClassReader for the class
 	 * @return whether the class qualifies as a candidate component
+	 *
+	 * @tips 对应的文件是否符合要求是根据过滤器中的 match 方法所返回的信息来判断的，
+	 * 当然用户可以实现并注册满足自己业务逻辑的过滤器来控制扫描的结果，
+	 * metadataReader 中有过滤所需要的全部文件信息。
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
 		for (TypeFilter tf : this.excludeFilters) {

@@ -97,6 +97,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * 如果无法找到对应的增强器便返回 DO_NOT_PROXY ，值为 null
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		// 获取增强器的功能
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
 		/**
 		 * 前面的函数已经完成了所有增强器的解析，但是对于所有增强器来讲，并不一定都适用于当前的 Bean，

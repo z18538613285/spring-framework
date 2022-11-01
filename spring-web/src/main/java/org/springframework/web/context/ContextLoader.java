@@ -140,6 +140,13 @@ public class ContextLoader {
 		// This is currently strictly internal and not meant to be customized
 		// by application developers.
 		try {
+			// DEFAULT_STRATEGIES_PATH = "ContextLoader.properties";
+			// 该文件内容 org.springframework.web.context.WebApplicationContext=org.springframework.web.context.support.XmlWebApplicationContext
+			/**
+			 * 在初始化的过程中，程序首先会读取 ContextLoader类同目录下的属性文件 ContextLoader.properties,
+			 * 并根据其中的配置提取将要实现 WebApplicationContext接口的实现类，
+			 * 并根据这个实现类通过反射的方式进行实例的创建
+			 */
 			ClassPathResource resource = new ClassPathResource(DEFAULT_STRATEGIES_PATH, ContextLoader.class);
 			defaultStrategies = PropertiesLoaderUtils.loadProperties(resource);
 		}
@@ -260,6 +267,7 @@ public class ContextLoader {
 	 */
 	public WebApplicationContext initWebApplicationContext(ServletContext servletContext) {
 		if (servletContext.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE) != null) {
+			// web.xml 中存在多次 ContextLoader 定义
 			throw new IllegalStateException(
 					"Cannot initialize context because there is already a root application context present - " +
 					"check whether you have multiple ContextLoader* definitions in your web.xml!");
@@ -276,6 +284,7 @@ public class ContextLoader {
 			// Store context in local instance variable, to guarantee that
 			// it is available on ServletContext shutdown.
 			if (this.context == null) {
+				// 初始化 context
 				this.context = createWebApplicationContext(servletContext);
 			}
 			if (this.context instanceof ConfigurableWebApplicationContext) {
@@ -292,6 +301,7 @@ public class ContextLoader {
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
+			// 将 WebApplicationContext 实现类记录在 servletContext 中
 			servletContext.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.context);
 
 			ClassLoader ccl = Thread.currentThread().getContextClassLoader();
@@ -299,6 +309,7 @@ public class ContextLoader {
 				currentContext = this.context;
 			}
 			else if (ccl != null) {
+				// 映射当前的类加载器与创建的实例到全局变量 currentContextPerThread 中
 				currentContextPerThread.put(ccl, this.context);
 			}
 
@@ -346,6 +357,7 @@ public class ContextLoader {
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext
 	 */
 	protected Class<?> determineContextClass(ServletContext servletContext) {
+		// CONTEXT_CLASS_PARAM = "contextClass";
 		String contextClassName = servletContext.getInitParameter(CONTEXT_CLASS_PARAM);
 		if (contextClassName != null) {
 			try {

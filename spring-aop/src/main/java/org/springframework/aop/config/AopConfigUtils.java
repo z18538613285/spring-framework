@@ -73,6 +73,9 @@ public abstract class AopConfigUtils {
 	public static BeanDefinition registerAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
+		/**
+		 * 对于解析来的代码流程 AOP 中已经有所分析 这里目的是为了注册 InfrastructureAdvisorAutoProxyCreator 类型的bean
+		 */
 		return registerOrEscalateApcAsRequired(InfrastructureAdvisorAutoProxyCreator.class, registry, source);
 	}
 

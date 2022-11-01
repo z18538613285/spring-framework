@@ -33,6 +33,15 @@ import javax.servlet.ServletContextListener;
  * @since 17.02.2003
  * @see #setContextInitializers
  * @see org.springframework.web.WebApplicationInitializer
+ *
+ * @tips ContextLoaderListener 的作用就是启动 Web 容器时，自动装配 ApplicationContext的配置信息。
+ * 因为它实现了 ServletContextListener 这个接口，在 web.xml 配置这个监听器，启动容器时，就会默认执行它
+ * 实现的方法，使用 ServletContextListener 接口，开发者能够在为客户端请求提供服务前向 ServletContext 中
+ * 添加任意的对象。这个对象在 ServletContext启动的时候被初始化，然后在 ServletContext 整个运行期间都是可见的。
+ *
+ * 每一个 Web 应用都有一个 ServletContext与之相关联。ServletContext对象在应用启动时被创建，在应用关闭的时候被销毁。
+ * servletContext 在全局范围内有效，类似于应用中的一个全局变量。
+ * 在 ServletContextListener 中的核心逻辑便是初始化 WebApplicationContext 实例并存放到 ServletContext 中。
  */
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
 
@@ -100,6 +109,12 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
+		// 初始化 WebApplicationContext
+		/**
+		 * 这里涉及了一个常用类 WebApplicationContext：在 Web 应用中，我们会用到 WebApplicationContext，
+		 * 其继承于 ApplicationContext，在 ApplicationContext 的基础上又追加了一些特定于Web的操作及属性，
+		 * 非常类似于通过编程方式使用Spring时使用的 ClassPathXmlApplicationContext 类提供的功能
+		 */
 		initWebApplicationContext(event.getServletContext());
 	}
 
