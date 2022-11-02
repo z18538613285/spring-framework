@@ -116,28 +116,39 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 	 * Look up a handler for the URL path of the given request.
 	 * @param request current HTTP request
 	 * @return the handler instance, or {@code null} if none found
+	 *
+	 * @tips 根据 URL 找到匹配的Controller并返回，当然如果没有找到对应的 Controller 处理器，那么程序会尝试去查找配置中
+	 * 的默认处理器，当然，当查找的 controller 为 String 类型时，那就意味着返回的是配置的 bean名称，
+	 * 需要根据 bean名称查找对应的 bean，最后还要通过 getHandlerExecutionChain 方法对返回的 Handler 进行封装，
+	 * 以保证满足返回类型的匹配。
 	 */
 	@Override
 	@Nullable
 	protected Object getHandlerInternal(HttpServletRequest request) throws Exception {
+		// 截取用于匹配的 url 有效路径
 		String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
+		// 根据路径寻找 Handler
 		Object handler = lookupHandler(lookupPath, request);
 		if (handler == null) {
 			// We need to care for the default handler directly, since we need to
 			// expose the PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE for it as well.
 			Object rawHandler = null;
 			if ("/".equals(lookupPath)) {
+				// 如果请求的路径仅仅是 “/” 那么使用 RootHandler 进行处理
 				rawHandler = getRootHandler();
 			}
 			if (rawHandler == null) {
+				// 无法找到 handler 则使用默认 handler
 				rawHandler = getDefaultHandler();
 			}
 			if (rawHandler != null) {
 				// Bean name or resolved handler?
+				// 根据 beanName 获取对应的 bean
 				if (rawHandler instanceof String) {
 					String handlerName = (String) rawHandler;
 					rawHandler = obtainApplicationContext().getBean(handlerName);
 				}
+				// 模板方法
 				validateHandler(rawHandler, request);
 				handler = buildPathExposingHandler(rawHandler, lookupPath, lookupPath, null);
 			}
@@ -161,6 +172,7 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 	@Nullable
 	protected Object lookupHandler(String urlPath, HttpServletRequest request) throws Exception {
 		// Direct match?
+		// 直接匹配情况的处理
 		Object handler = this.handlerMap.get(urlPath);
 		if (handler != null) {
 			// Bean name or resolved handler?
@@ -169,10 +181,12 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 				handler = obtainApplicationContext().getBean(handlerName);
 			}
 			validateHandler(handler, request);
+			// 将 Handler 封装为 HandlerExecutionChain 类型
 			return buildPathExposingHandler(handler, urlPath, urlPath, null);
 		}
 
 		// Pattern match?
+		// 通配符匹配的处理
 		List<String> matchingPatterns = new ArrayList<>();
 		for (String registeredPattern : this.handlerMap.keySet()) {
 			if (getPathMatcher().match(registeredPattern, urlPath)) {
@@ -254,6 +268,10 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 	 * @param pathWithinMapping the path to expose before executing the handler
 	 * @param uriTemplateVariables the URI template variables, can be {@code null} if no variables found
 	 * @return the final handler object
+	 *
+	 * @tips 通过将 Handler 以参数传入，并构建 HandlerExecutionChain 类型实例，加入了两个拦截器。
+	 * 此时我们似乎已经了解了Spring 这样大费周折的目的。链处理机制，是Spring中非常常见的处理方式，是 AOP中的重要组成部分，
+	 * 可以方便地对目标对象进行扩展及拦截，这是非常优秀的设计。
 	 */
 	protected Object buildPathExposingHandler(Object rawHandler, String bestMatchingPattern,
 			String pathWithinMapping, @Nullable Map<String, String> uriTemplateVariables) {

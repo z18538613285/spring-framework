@@ -312,6 +312,33 @@ public class DispatcherServlet extends FrameworkServlet {
 		// This is currently strictly internal and not meant to be customized
 		// by application developers.
 		try {
+			// DEFAULT_STRATEGIES_PATH = "DispatcherServlet.properties";
+			/**
+			 * 系统加载的时候，defaultStrategies 根据当前路径 DispatcherServlet.properties 来初始化本身，
+			 * 查看 DispatcherServlet.properties 中对应于 HandlerAdapter 的属性
+			 *
+			 * 		org.springframework.web.servlet.HandlerAdapter=org.springframework.web.servlet.mvc.HttpRequestHandlerAdapter,\
+			 * 			org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter,\
+			 * 			org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter
+			 * 	由此得知，如果程序开发人员没有在配置文件中定义自己的适配器，那么 Spring 会默认加载配置文件中的 3 个适配器
+			 *
+			 * 作为总控制器的派遣器 servlet 通过处理器映射得到处理器后，会轮训处理器适配器模块，查找能够处理当前 HTTP 请求的处理器适配器的实现，
+			 * 处理器适配器模块根据处理器映射返回的处理器类型，例如简单的控制器类型，注解控制器类型或者远程调用处理器类型，来选择某一个适当的处理器
+			 * 适配器的实现，从而适配当前的 HTTP 请求。
+			 *
+			 * HTTP 请求处理器适配器（HttpRequestHandlerAdapter）
+			 * 		HTTP 请求处理器适配器仅仅支持对 HTTP 请求处理器的适配，他简单地将HTTP 请求对象和响应对象传递给 HTTP 请求处理器的实现，他不需要返回值。
+			 * 		它主要应用在基于 HTTP 的远程调用的实现上
+			 * 简单控制器处理器适配器（SimpleControllerHandlerAdapter）
+			 * 		这个实现将 HTTP 请求适配到一个控制器的实现进行处理。这里控制器的实现是一个简单的控制器接口的实现。简单控制器处理器适配器被设计成
+			 * 	    一个框架类的实现，不需要被改写，客户化的业务逻辑通常是在控制器接口的实现类中实现的。
+			 * 注解方法处理器适配器（AnnotationMethodHandlerAdapter）
+			 * 		这个类的实现是基于注解的实现，他需要结合注解方法映射和注解方法处理器协同工作，它通过解析声明在注解控制器的请求映射信息来解析相应的处理器方法
+			 * 		来处理当前的 HTTP 请求。在处理的过程中，它通过反射来发现探测处理器方法的参数，调用处理器方法，并且映射返回值到模型和控制器对象，最后返回模型和
+			 * 		控制器对象给作为主控制器的派遣器 servlet
+			 *
+			 *
+			 */
 			ClassPathResource resource = new ClassPathResource(DEFAULT_STRATEGIES_PATH, DispatcherServlet.class);
 			defaultStrategies = PropertiesLoaderUtils.loadProperties(resource);
 		}
@@ -542,6 +569,17 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the MultipartResolver used by this class.
 	 * <p>If no bean is defined with the given name in the BeanFactory for this namespace,
 	 * no multipart handling is provided.
+	 *
+	 * @tips 在 Spring 中，MultipartResolver 主要用来处理文件上传，默认情况下，Spring是没有 ，multipart处理的，
+	 * 因为一些开发者想要自己处理它们，如果想使用 Spring的 multipart ，则需要在 Web 应用的上下文中添加 multipart 解析器。
+	 * 这样，每个请求就会被检查是否包含 multipart。然而，如果请求中包含 multipart，那么上下文中定义的 MultipartResolver 就会解析它，
+	 * 这样请求中的 multipart 属性 就会像其它属性一样被处理 ，常用配置如下：
+	 * <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver" >
+	 *     该属性用来配置可传文件的最大字节数
+	 *     <property name="maximumFileSize" >
+	 *         <value>100000</value>
+	 *     </property>
+	 * </bean>
 	 */
 	private void initMultipartResolver(ApplicationContext context) {
 		try {
@@ -566,6 +604,19 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the LocaleResolver used by this class.
 	 * <p>If no bean is defined with the given name in the BeanFactory for this namespace,
 	 * we default to AcceptHeaderLocaleResolver.
+	 *
+	 * @tips 在 Spring 的国际化配置中一共有3中使用方式
+	 * 1、基于 URL 参数的配置
+	 * 		通过 URL 参数来控制国际化，比如在页面加一句 <a href="?locale=zh_CN“>简体中文</a> 来控制
+	 * 		项目中使用呢的国际化参数，而提供这个功能的就是 AcceptHeaderLocaleResolver，默认的参数名 为 locale，注意大小写
+	 *
+	 * 2、基于 session 的配置
+	 * 		它会检验用户回话中预置的属性来解析区域。最常用的是根据用户会话过程中的语言设定巨鼎语言种类，
+	 * 		如果该会话属性不存在，它会根据 accept-language HTTP 头部确定默认区域
+	 *
+	 * 3、基于 cookie 的国际化配置
+	 * 		CookieLocaleResolver 用于通过浏览器的 cookie 设置取得 Locale 对象。这种策略在应用程序不支持会话或者
+	 * 		状态必须保存在客户端时有用
 	 */
 	private void initLocaleResolver(ApplicationContext context) {
 		try {
@@ -591,6 +642,34 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the ThemeResolver used by this class.
 	 * <p>If no bean is defined with the given name in the BeanFactory for this namespace,
 	 * we default to a FixedThemeResolver.
+	 *
+	 * @tips 在 Web 开发中经常会遇到通过主题 Theme 来控制网页风格，浙江进一步改善用户体验。简单地说，一个主题就是一组静态
+	 * 资源（比如样式和图片），它们可以影响用户程序的视觉效果。Spring 中 主题功能和国际化功能非常类似。
+	 *
+	 * 主题资源：
+	 * 		org.springframework.ui.context.ThemeSource 是 Spring 中主题资源的接口，Spring 的主题需要通过 ThemeSource 接口
+	 * 		来实现存放主题信息的资源。
+	 * 		org.springframework.ui.context.support.ResourceBundleThemeSource 是ThemeSource 接口默认实现类（也就是
+	 * 	    通过 ResourceBundle 资源的方式定义主题），在 Spring 中配置如下
+	 * 	    <bean id="themeSource" class="org.springframework.ui.context.support.ResourceBundleThemeSource" >
+	 * 	        <property name="basenamePrefix" value="com.test. " >
+	 *
+	 * 	        </property>
+	 * 	     /bean>
+	 * 	     默认状态下是在类路径根目录下查找相应的资源文件，也可以通过 basenamePrefix 来制定。
+	 * 	     这样，DispatcherServlet 就会在com.test 包下查找资源文件
+	 *
+	 * 主题解析器
+	 * 		ThemeSource 定义了一些主题资源，那么不同的用户使用什么主题资源由谁定义呢？
+	 * 		org.springframework.web.servlet.ThemeResolver 是主题解析器的接口，主题解析的工作便由它的子类来完成
+	 * 		对于主题解析器的子类主要有3个比较常见的实现。以主题文件 summer.properties 为例
+	 * 		（1）FixedThemeResolver 用于选择一个固定的主题。
+	 * 		（2）CookieThemeResolver 用于实现用户所选的主题，以 cookie 的形式存放在客户端的机器上。
+	 * 		（3）SessionThemeResolver 用于主题保存在用户的 HTTP Session 中，保存在 HttpSession 中。
+	 * 		（4）AbstractThemeResolver 是一个抽象类 被 SessionThemeResolver 和 FixedThemeResolver 继承，
+	 * 			用户也可以继承它来自定义主题解析器。
+	 *
+	 * 如果需要根据用户请求来改变主题，那么 Spring 提供了一个已经实现的拦截器——ThemeChangeInterceptor 拦截器
 	 */
 	private void initThemeResolver(ApplicationContext context) {
 		try {
@@ -616,6 +695,18 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the HandlerMappings used by this class.
 	 * <p>If no HandlerMapping beans are defined in the BeanFactory for this namespace,
 	 * we default to BeanNameUrlHandlerMapping.
+	 *
+	 * @tips 当客户端发出 Request 时 DispatcherServlet 会将 Request 提交 HandlerMapping，然后 HandlerMapping
+	 * 根据 Web Application Context 的配置来回传给 DispatcherServlet 相应的Controller。
+	 * 在基于 SpringMVC 的 Web 应用程序中，我们可以为 Dispatcher 提供多个 HandlerMapping供其使用。DispatchServlet 在选用
+	 * HandlerMapping 的过程中，将根据我们所指定的一系列 HandlerMapping的优先级进行排序，然后优先使用优先级在前的HandlerMapping。
+	 *
+	 * 默认情况下SpringMVC 将加载当前系统中所有实现了 HandlerMapping 接口的 bean。如果只期望 SpringMVC加载指定的 HandlerMapping时，
+	 * 可以修改 web.xml 中的 DispatcherServlet的初始化参数，将 detectAllHandlerMappings 的值设置为 false
+	 *
+	 * 此时，SpringMVC 将查找名为 “handlerMapping” 的bean，并作为当前系统中唯一的 handlermapping。如果没有定义 handlerMapping的话，
+	 * 则SpringMVC 将按照 org.springframework.web.servlet.Dispatcher 所在目录下的 DispatcherServlet.properties 中所定义的 org.springframework.web.servlet.HandlerMapping 的内容
+	 * 拉加载默认的 handlerMapping（用户没有自定义 Strategies的情况下）
 	 */
 	private void initHandlerMappings(ApplicationContext context) {
 		this.handlerMappings = null;
@@ -655,10 +746,21 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the HandlerAdapters used by this class.
 	 * <p>If no HandlerAdapter beans are defined in the BeanFactory for this namespace,
 	 * we default to SimpleControllerHandlerAdapter.
+	 *
+	 * @tips 从名字也能联想到这是个典型的适配器模式的使用，在计算机编程中，适配器模式将一个类的接口
+	 * 适配成用户所期待的。使用适配器，可以使接口不兼容而无法在一起工作的类协同工作，做法是将类自己的接口
+	 * 包裹在一个已存在的类中。那么在处理 handler 时为什么会使用适配器模式呢?
+	 *
+	 * Spring中所使用的 Handler 并没有任何特殊的联系，但是为了统一处理，Spring 提供了
+	 * 不同情况下的适配器。
+	 *
 	 */
 	private void initHandlerAdapters(ApplicationContext context) {
 		this.handlerAdapters = null;
 
+		/**
+		 * detectAllHandlerAdapters变量和 detectAllHandlerMappings类似，只不过作用对象为 handlerAdapter。
+		 */
 		if (this.detectAllHandlerAdapters) {
 			// Find all HandlerAdapters in the ApplicationContext, including ancestor contexts.
 			Map<String, HandlerAdapter> matchingBeans =
@@ -682,6 +784,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		// Ensure we have at least some HandlerAdapters, by registering
 		// default HandlerAdapters if no other adapters are found.
 		if (this.handlerAdapters == null) {
+			// 如果无法找到对应的 bean，那么系统会尝试加载默认的适配器。
 			this.handlerAdapters = getDefaultStrategies(context, HandlerAdapter.class);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No HandlerAdapters declared for servlet '" + getServletName() +
@@ -694,6 +797,11 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the HandlerExceptionResolver used by this class.
 	 * <p>If no bean is defined with the given name in the BeanFactory for this namespace,
 	 * we default to no exception resolver.
+	 *
+	 * @tips 基于 HandlerExceptionResolver 接口的异常处理，使用这种方式只需要实现 resolverException 方法，该方法返回
+	 * 一个 ModelAndView 对象，在方法内部对异常的类型进行判断，然后尝试生成对应的 ModelAndView 对象，如果该方法返回了 null，
+	 * 则 Spring 会继续寻找其它的实现了 HandlerExceptionResolver 接口的 bean，换句话说，会逐个执行 逐个类型的bean，直到返回
+	 * 一个ModelAndView 对象。
 	 */
 	private void initHandlerExceptionResolvers(ApplicationContext context) {
 		this.handlerExceptionResolvers = null;
@@ -733,6 +841,21 @@ public class DispatcherServlet extends FrameworkServlet {
 	/**
 	 * Initialize the RequestToViewNameTranslator used by this servlet instance.
 	 * <p>If no implementation is configured then we default to DefaultRequestToViewNameTranslator.
+	 *
+	 * @tips 当 Controller 处理器方法没有返回一个 View 对象或逻辑试图名称，并且该方法中没有直接往 response 的输出流里面写数据的时候，
+	 * Spring就会采用约定好的方式提供一个逻辑视图名称。这个逻辑视图名称是通过 Spring定义的org.springframework.web.servlet.RequestToViewNameTranslator
+	 * 接口的 getViewName 方法实现的，可以自己实现它来约定好没有返回视图名称的时候如何确定视图名称。Spring 已经给我们提供了一个它自己的实现，
+	 * 那就是 org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator。
+	 *
+	 * 支持用户定义的属性
+	 * 		prefix：前缀
+	 * 		suffix：后置
+	 * 		separator：分隔符，默认斜杠 ”/“
+	 * 		stripLeadingSlash：如果首字符是分隔符，是否要去除，默认是true
+	 * 		stripTrailingSlash：如果最后一个字符是分隔符，是否要去除，默认是true
+	 * 		stripExtension：如果请求路径包含扩展名是否要去除，默认是true
+	 * 		urlDecode：是否需要对 URL 解码，默认是true，它会采用 request 指定的编码或者
+	 * 			ISO-8859-1 编码对 URL 进行解码。
 	 */
 	private void initRequestToViewNameTranslator(ApplicationContext context) {
 		try {
@@ -759,6 +882,10 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the ViewResolvers used by this class.
 	 * <p>If no ViewResolver beans are defined in the BeanFactory for this
 	 * namespace, we default to InternalResourceViewResolver.
+	 *
+	 * @tips 在 SpringMVC 中，当 Controller 将请求处理结果放入到 ModelAndView 中以后，DispatcherServlet会根据 ModelAndView
+	 * 选择合适的视图进行渲染。在 ViewResolver 中定义了 resolverViewName 方法，根据viewName 创建合适类型的 view 实现。
+	 *
 	 */
 	private void initViewResolvers(ApplicationContext context) {
 		this.viewResolvers = null;
@@ -798,6 +925,14 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the {@link FlashMapManager} used by this servlet instance.
 	 * <p>If no implementation is configured then we default to
 	 * {@code org.springframework.web.servlet.support.DefaultFlashMapManager}.
+	 *
+	 * @tips SpringMVC Flash attributes 提供了一个请求存储属性，可供其它请求使用。在使用重定向时候非常必要，
+	 * 例如 Post/Redirect/Get 模式。Flash attributes 在重定向之前暂存（就像存在session中）以便重定向之后
+	 * 还能使用，并立即删除。
+	 * SpringMVC 有两个主要的抽象来支持 flash arrtibutes，FlashMap 用于保持 flash attributes，而 FlashMapManager
+	 * 用于存储、检索、管理 FlashMap实例。
+	 * flash attribute 支持默认开启“on”并不需要显示启用，它永远不会导致 HTTP Session 的创建。
+	 * 这两个 FlashMap实例都可以通过静态方法 RequestContextUtils 从 SpringMVC 的任何位置访问。
 	 */
 	private void initFlashMapManager(ApplicationContext context) {
 		try {
@@ -882,6 +1017,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @param context the current WebApplicationContext
 	 * @param strategyInterface the strategy interface
 	 * @return the List of corresponding strategy objects
+	 *
+	 * @tips 在getDefaultStrategies 函数中，Spring 会尝试从 dafaultStrategies 中加载对应的 HandlerAdapter 的属性，
+	 * 而 dafaultStrategies 是在 static 静态代码块中初始化的
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T> List<T> getDefaultStrategies(ApplicationContext context, Class<T> strategyInterface) {
@@ -932,6 +1070,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	/**
 	 * Exposes the DispatcherServlet-specific request attributes and delegates to {@link #doDispatch}
 	 * for the actual dispatching.
+	 *
+	 * @tips Spring 将已经初始化的功能辅助工具变量，比如 localeResolver、themeResolver等设置在 request属性中，
+	 * 而这些属性会在接下来的处理中派上用场
 	 */
 	@Override
 	protected void doService(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -1036,41 +1177,72 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+				/**
+				 * 如果是 MultipartContent类型的 request 则转换 request 为 MultipartHttpServletRequest 类型的 request
+				 */
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// 根据 request 信息寻找对应的 Handler 其实是HandlerExecutionChain
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
+					// 如果没有找到对应的 handler 则通过 response 反馈错误信息
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
 				// Determine handler adapter for the current request.
+				// 根据当前的 handler 寻找对应的 HandlerAdapter （普通的 Web 请求会交给 SimpleControllerHandlerAdapter）
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
+				// 如果当前 handler 支持 last-modified 头处理
 				String method = request.getMethod();
 				boolean isGet = "GET".equals(method);
 				if (isGet || "HEAD".equals(method)) {
+					/**
+					 * 在研究 Spring 对缓存处理的功能支持前，我们先了解一个概念：Last-Modified缓存机制。
+					 * 1、在客户端第一次输入 URL 时，服务器端会返回内容和状态码200，表示请求成功，同时会添加一个“Last-Modified”的
+					 * 		响应头，表示此文件在服务器的最后更新时间，例如：Last-Modified: Wed, 14 Mar 2012 10:22:42 GMT
+					 * 2、客户端第二次请求此 URL 时，客户端会向服务器发送请求头 “If-Modified-Since”，询问服务器该时间之后当前的请求内容
+					 * 是否有被修改过，如果请求内容没有变化，则自动返回 HTTP 304 状态码（只要响应头，内容为空，这样就节省了网络带宽）
+					 *
+					 * Spring 提供了对 Last-Modified 机制的支持，只需要实现 LastModified接口
+					 */
 					long lastModified = ha.getLastModified(request, mappedHandler.getHandler());
 					if (new ServletWebRequest(request, response).checkNotModified(lastModified) && isGet) {
 						return;
 					}
 				}
 
+				// 拦截器的 preHandler 方法的调用
+				/**
+				 * Servlet API 定义的 servlet 过滤器可以在 servlet 处理每个Web请求的前后分别对它进行前置处理和后置处理。
+				 * 此外，有些时候，你可能只想处理由某些 SpringMVC 处理程序处理的 Web请求，并在这些处理程序返回的模型属性被传递
+				 * 到视图之前，对它们进行一些操作
+				 * SpringMVC 允许通过处理拦截 Web 请求，进行前置处理和后置处理，处理拦截是在Spring的 Web应用程序上下文中配置的，
+				 * 因此它们可以利用各种容器特性，并引用容器中声明的任何 bean，处理拦截是针对特殊的处理程序映射进行注册的，因此它
+				 * 只拦截通过这些处理程序映射的请求。每个处理拦截都必须实现 HandlerInterceptor接口，它包含三个需要实现的回调方法：
+				 * preHandle、postHandle和afterCompletion，第二个方法还允许访问返回的 ModelAndView对象，最后一个方法是在所有请求
+				 * 处理完成之后被调用的
+				 */
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+				// 真正的激活 handler 并返回视图
+				// 通过适配器中转调用Handler并返回视图的
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
 
+				// 视图名称转换应用于需要添加前缀后缀的情况
 				applyDefaultViewName(processedRequest, mv);
+				// 应用所有拦截器的 postHandle 方法
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1135,13 +1307,16 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
+				// 异常视图的处理
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
 			}
 		}
 
 		// Did the handler return a view to render?
+		// 如果在 Handler 实例的处理中返回了 view 那么需要做页面的处理
 		if (mv != null && !mv.wasCleared()) {
+			// 处理页面跳转
 			render(mv, request, response);
 			if (errorView) {
 				WebUtils.clearErrorRequestAttributes(request);
@@ -1159,6 +1334,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		if (mappedHandler != null) {
+			// 完成处理激活触发器
 			mappedHandler.triggerAfterCompletion(request, response, null);
 		}
 	}
@@ -1252,6 +1428,19 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>Tries all handler mappings in order.
 	 * @param request current HTTP request
 	 * @return the HandlerExecutionChain, or {@code null} if no handler could be found
+	 *
+	 * @tips 在 Spring中最简单的映射处理器配置如下：
+	 * <bean id="simpleUrlMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+	 *     <property name="mapping">
+	 *         <props>
+	 *             <prop key="/userlist.htm">userController</prop>
+	 *         </props>
+	 *     </property>
+	 * </bean>
+	 *
+	 * 在 Spring 加载的过程中，Spring 会将类型为 SimpleUrlHandlerMapping 的实例加载到 this.handlerMapping 中，
+	 * 按照常理推断，根据 request  提取对应的 Handler，无非就是提取当前实例中 userController，但是userController为继承
+	 * 自 AbstractController 类型实例，与HandlerExecutionChain 并无任何关联，那么这一步是如何封装的？
 	 */
 	@Nullable
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
@@ -1362,6 +1551,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @param response current HTTP servlet response
 	 * @throws ServletException if view is missing or cannot be resolved
 	 * @throws Exception if there's a problem rendering the view
+	 *
+	 * @tips 无论是一个系统还是一个站点，最重要的工作都是与用户进行交互，用户操作系统后无论下发的命令成功与否都需要
+	 * 给用户一个反馈，以便于用户进行下一步的判断。所以，在逻辑处理的最后一定会涉及一个页面跳转的问题。
 	 */
 	protected void render(ModelAndView mv, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// Determine locale for request and apply it to the response.
@@ -1373,6 +1565,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		String viewName = mv.getViewName();
 		if (viewName != null) {
 			// We need to resolve the view name.
+			// 解析视图名称，Dispatcher 会根据 ModelAndView 选择合适的视图来进行渲染
 			view = resolveViewName(viewName, mv.getModelInternal(), locale, request);
 			if (view == null) {
 				throw new ServletException("Could not resolve view with name '" + mv.getViewName() +
@@ -1396,6 +1589,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			if (mv.getStatus() != null) {
 				response.setStatus(mv.getStatus().value());
 			}
+			// 当通过 viewName解析到对应的View后，就可以进行的处理跳转逻辑了
 			view.render(mv.getModelInternal(), request, response);
 		}
 		catch (Exception ex) {
@@ -1437,6 +1631,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		if (this.viewResolvers != null) {
 			for (ViewResolver viewResolver : this.viewResolvers) {
+				// 以InternalResourceViewResolver 为例进行分析
 				View view = viewResolver.resolveViewName(viewName, locale);
 				if (view != null) {
 					return view;

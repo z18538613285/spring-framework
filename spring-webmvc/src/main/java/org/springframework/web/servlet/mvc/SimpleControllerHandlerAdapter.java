@@ -39,6 +39,12 @@ import org.springframework.web.servlet.ModelAndView;
  */
 public class SimpleControllerHandlerAdapter implements HandlerAdapter {
 
+	/**
+	 * SimpleControllerHandlerAdapter 就是用于处理普通的 Web请求的，而且对于 SpringMVC来说，我们会把逻辑封装至 Controller的子类中，
+	 * 例如 userController就是继承自 AbstractController ，而 AbstractController 实现 Controller接口
+	 * @param handler handler object to check
+	 * @return
+	 */
 	@Override
 	public boolean supports(Object handler) {
 		return (handler instanceof Controller);
