@@ -237,11 +237,16 @@ public abstract class AbstractPollingMessageListenerContainer extends AbstractMe
 			Object invoker, @Nullable Session session, @Nullable MessageConsumer consumer)
 			throws JMSException {
 
+		/**
+		 * 如果用户配置了 transactionManager 也就是配置了事务，那么消息的接收会被控制在事务之内，一旦出现任何异常都会被回滚，而
+		 * 回滚操作也会交由事务管理器统一处理，比如 this.transactionManager.rollback(status)
+		 */
 		if (this.transactionManager != null) {
 			// Execute receive within transaction.
 			TransactionStatus status = this.transactionManager.getTransaction(this.transactionDefinition);
 			boolean messageReceived;
 			try {
+				// 包含了整个消息的接收处理过程，由于掺杂这事务，所有并没有复用模板中的方法
 				messageReceived = doReceiveAndExecute(invoker, session, consumer, status);
 			}
 			catch (JMSException | RuntimeException | Error ex) {
@@ -300,6 +305,7 @@ public abstract class AbstractPollingMessageListenerContainer extends AbstractMe
 				consumerToUse = createListenerConsumer(sessionToUse);
 				consumerToClose = consumerToUse;
 			}
+			// 接收消息
 			Message message = receiveMessage(consumerToUse);
 			if (message != null) {
 				if (logger.isDebugEnabled()) {
@@ -307,6 +313,7 @@ public abstract class AbstractPollingMessageListenerContainer extends AbstractMe
 							consumerToUse + "] of " + (transactional ? "transactional " : "") + "session [" +
 							sessionToUse + "]");
 				}
+				// 模板方法，当消息接收且在未处理前给子类做相应处理，当前空实现
 				messageReceived(invoker, sessionToUse);
 				boolean exposeResource = (!transactional && isExposeListenerSession() &&
 						!TransactionSynchronizationManager.hasResource(obtainConnectionFactory()));
@@ -315,6 +322,7 @@ public abstract class AbstractPollingMessageListenerContainer extends AbstractMe
 							obtainConnectionFactory(), new LocallyExposedJmsResourceHolder(sessionToUse));
 				}
 				try {
+					// 激活监听器
 					doExecuteListener(sessionToUse, message);
 				}
 				catch (Throwable ex) {
@@ -344,6 +352,7 @@ public abstract class AbstractPollingMessageListenerContainer extends AbstractMe
 					logger.trace("Consumer [" + consumerToUse + "] of " + (transactional ? "transactional " : "") +
 							"session [" + sessionToUse + "] did not receive a message");
 				}
+				// 接收到空消息的处理
 				noMessageReceived(invoker, sessionToUse);
 				// Nevertheless call commit, in order to reset the transaction timeout (if any).
 				if (shouldCommitAfterNoMessageReceived(sessionToUse)) {

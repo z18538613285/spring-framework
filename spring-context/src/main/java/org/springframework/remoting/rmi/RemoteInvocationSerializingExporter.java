@@ -103,6 +103,7 @@ public abstract class RemoteInvocationSerializingExporter extends RemoteInvocati
 	 * Initialize this service exporter.
 	 */
 	public void prepare() {
+		// 创建代理
 		this.proxy = getProxyForService();
 	}
 

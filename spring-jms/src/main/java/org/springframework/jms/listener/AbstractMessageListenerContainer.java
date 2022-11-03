@@ -671,12 +671,22 @@ public abstract class AbstractMessageListenerContainer extends AbstractJmsListen
 		}
 
 		try {
+			/**
+			 * 通过层层调用，最终提取监听器并使用 listener.onMessage(message) 对其进行了激活，也就是
+			 * 激活了用户自定义的监听器逻辑。
+			 */
 			invokeListener(session, message);
 		}
 		catch (JMSException | RuntimeException | Error ex) {
 			rollbackOnExceptionIfNecessary(session, ex);
 			throw ex;
 		}
+		/**
+		 * 完成的功能是 session.commit() ，完成消息服务的事务提交，也就是说我们在消息接收过程中如果产生其它操作，比如向数据库插入数据，一旦
+		 * 出现异常时就需要全部回滚，包括回滚插入数据库的数据。但是，除了我们常说的事务之外，对于消息本身还有一个事务，当接收一个消息的时候，必须使用事务
+		 * 提交的方式，这是在告诉消息服务器本地已经正常接收消息，消息服务器接收到本地的事务提交后便可以将此消息删除，
+		 * 否则，当前消息会被其它接受者重新接收
+		 */
 		commitIfNecessary(session, message);
 	}
 

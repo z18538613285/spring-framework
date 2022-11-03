@@ -182,18 +182,28 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 	 * @see #executeHttpPost
 	 * @see #validateResponse
 	 * @see #getResponseBody
+	 *
+	 * @tips 在 doExecuteRequest 方法中真正实现了对远程方法的构造与通信，与远程方法的连接功能实现中，Spring引入了
+	 * 第三方 JAR:HttpClient。HttpClient 是 Apache Jakarta Common 下的子项目，可以用来提供高效的、最新的、功能丰富的
+	 * 支持HTTP协议的客户端编程工具包，并且它支持 HTTP 协议最新的版本和建议。
 	 */
 	@Override
 	protected RemoteInvocationResult doExecuteRequest(
 			HttpInvokerClientConfiguration config, ByteArrayOutputStream baos)
 			throws IOException, ClassNotFoundException {
 
+		// 创建 HttpPost
 		HttpPost postMethod = createHttpPost(config);
+		// 设置含有方法的输出流到post中
 		setRequestBody(config, postMethod, baos);
 		try {
+			// 执行方法并等待结果响应
 			HttpResponse response = executeHttpPost(config, getHttpClient(), postMethod);
+			// 验证
 			validateResponse(config, response);
+			// 提取返回的输入流
 			InputStream responseBody = getResponseBody(config, response);
+			// 从输入流中提取结果
 			return readRemoteInvocationResult(responseBody, config.getCodebaseUrl());
 		}
 		finally {
@@ -211,6 +221,7 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 	 * @throws java.io.IOException if thrown by I/O methods
 	 */
 	protected HttpPost createHttpPost(HttpInvokerClientConfiguration config) throws IOException {
+		// 设置需要访问的url
 		HttpPost httpPost = new HttpPost(config.getServiceUrl());
 
 		RequestConfig requestConfig = createRequestConfig(config);
@@ -222,11 +233,13 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 		if (localeContext != null) {
 			Locale locale = localeContext.getLocale();
 			if (locale != null) {
+				// 加入 Accept-Language 属性
 				httpPost.addHeader(HTTP_HEADER_ACCEPT_LANGUAGE, locale.toLanguageTag());
 			}
 		}
 
 		if (isAcceptGzipEncoding()) {
+			// 加入 Accept-Encoding 属性
 			httpPost.addHeader(HTTP_HEADER_ACCEPT_ENCODING, ENCODING_GZIP);
 		}
 
@@ -289,6 +302,10 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 			HttpInvokerClientConfiguration config, HttpPost httpPost, ByteArrayOutputStream baos)
 			throws IOException {
 
+		/**
+		 * 需要注意的是传入的 ContentType 类型，一定要传入 application/x-java-serialized-object 以保证
+		 * 服务端解析时会按照序列化对象的解析方式进行解析
+		 */
 		ByteArrayEntity entity = new ByteArrayEntity(baos.toByteArray());
 		entity.setContentType(getContentType());
 		httpPost.setEntity(entity);
@@ -306,6 +323,7 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 			HttpInvokerClientConfiguration config, HttpClient httpClient, HttpPost httpPost)
 			throws IOException {
 
+		// 通过 HttpClient 所提供的的方法来直接执行远程方法
 		return httpClient.execute(httpPost);
 	}
 
@@ -322,6 +340,7 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 			throws IOException {
 
 		StatusLine status = response.getStatusLine();
+		// 对于 HTTP 调用的响应码处理，大于 300 则是非正常调用的响应码。
 		if (status.getStatusCode() >= 300) {
 			throw new NoHttpResponseException(
 					"Did not receive successful HTTP response: status code = " + status.getStatusCode() +
@@ -340,6 +359,8 @@ public class HttpComponentsHttpInvokerRequestExecutor extends AbstractHttpInvoke
 	 * @throws java.io.IOException if thrown by I/O methods
 	 * @see #isGzipResponse
 	 * @see java.util.zip.GZIPInputStream
+	 *
+	 * @tips 从服务器返回的输入流可能是经过压缩的，不同的方式采用不同的办法进行提前。
 	 */
 	protected InputStream getResponseBody(HttpInvokerClientConfiguration config, HttpResponse httpResponse)
 			throws IOException {

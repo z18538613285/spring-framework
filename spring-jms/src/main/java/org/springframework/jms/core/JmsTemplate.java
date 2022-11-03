@@ -491,8 +491,11 @@ public class JmsTemplate extends JmsDestinationAccessor implements JmsOperations
 			Session sessionToUse = ConnectionFactoryUtils.doGetTransactionalSession(
 					obtainConnectionFactory(), this.transactionalResourceFactory, startConnection);
 			if (sessionToUse == null) {
+				// 创建 connection
 				conToClose = createConnection();
+				// 根据 conntection 创建 session
 				sessionToClose = createSession(conToClose);
+				// 是否开启向服务器推送连接信息，只有接收信息时需要，发送时不需要
 				if (startConnection) {
 					conToClose.start();
 				}
@@ -501,13 +504,16 @@ public class JmsTemplate extends JmsDestinationAccessor implements JmsOperations
 			if (logger.isDebugEnabled()) {
 				logger.debug("Executing callback on JMS Session: " + sessionToUse);
 			}
+			// 调用回调函数
 			return action.doInJms(sessionToUse);
 		}
 		catch (JMSException ex) {
 			throw convertJmsAccessException(ex);
 		}
 		finally {
+			// 关闭 session
 			JmsUtils.closeSession(sessionToClose);
+			//释放连接
 			ConnectionFactoryUtils.releaseConnection(conToClose, getConnectionFactory(), startConnection);
 		}
 	}
@@ -594,6 +600,8 @@ public class JmsTemplate extends JmsDestinationAccessor implements JmsOperations
 	 * @param destination the JMS Destination to send to
 	 * @param messageCreator callback to create a JMS Message
 	 * @throws JMSException if thrown by JMS API methods
+	 *
+	 * @tips 根据 Destination 创建 MessageProducer。Message，并使用 MessageProducer 实例发送信息
 	 */
 	protected void doSend(Session session, Destination destination, MessageCreator messageCreator)
 			throws JMSException {
@@ -771,6 +779,9 @@ public class JmsTemplate extends JmsDestinationAccessor implements JmsOperations
 	 * @param consumer the JMS MessageConsumer to receive with
 	 * @return the JMS Message received, or {@code null} if none
 	 * @throws JMSException if thrown by JMS API methods
+	 *
+	 * @tips 实现的套路与发送差不多，同样还是使用 execute 函数来封装冗余的公共操作，而最终的目标还是
+	 * 通过 consumer.receive() 来接收消息，其中的过程就是对于 MessageConsumer 的创建以及辅助操作
 	 */
 	@Nullable
 	protected Message doReceive(Session session, MessageConsumer consumer) throws JMSException {

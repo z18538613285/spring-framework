@@ -58,6 +58,14 @@ import org.springframework.util.ClassUtils;
  * @see #sharedConnectionEnabled()
  * @see #doInitialize()
  * @see #doShutdown()
+ *
+ * @tips 消息监听器容器是一个用于查看 JMS 目标等待消息到达的特殊 bean，一旦消息到达他就可以获取到信息，并通过调用 onMessage 方法
+ * 将消息传递给一个MessageListener 实现。Spring中消息监听器容器的类型如下
+ * 1、SimpleMessageListenerContainer：最简单的消息监听器容器，只能处理固定数量的 JMS 会话，且不支持事务。
+ * 2、DefaultMessageListenerContainer：它建立在 SimpleMessageListenerContainer 容器之上，添加了对事务的支持。
+ * 3、serversession.ServerSessionMessage.ListenerContainer： 这个是功能最强大的消息监听器，与DefaultMessageListenerContainer相同，
+ * 		除了支持事务，还允许动态地管理 JMS 会话。
+ *
  */
 public abstract class AbstractJmsListeningContainer extends JmsDestinationAccessor
 		implements BeanNameAware, DisposableBean, SmartLifecycle {
@@ -163,8 +171,11 @@ public abstract class AbstractJmsListeningContainer extends JmsDestinationAccess
 	 */
 	@Override
 	public void afterPropertiesSet() {
+		// 验证 connectionFacctory
 		super.afterPropertiesSet();
+		// 验证配置文件
 		validateConfiguration();
+		// 初始化
 		initialize();
 	}
 
@@ -198,6 +209,7 @@ public abstract class AbstractJmsListeningContainer extends JmsDestinationAccess
 	 */
 	public void initialize() throws JmsException {
 		try {
+			// lifecycleMonitor 用于控制生命周期的同步处理
 			synchronized (this.lifecycleMonitor) {
 				this.active = true;
 				this.lifecycleMonitor.notifyAll();

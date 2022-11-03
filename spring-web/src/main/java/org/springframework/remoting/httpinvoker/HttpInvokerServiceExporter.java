@@ -58,6 +58,12 @@ import org.springframework.web.util.NestedServletException;
  * @see HttpInvokerProxyFactoryBean
  * @see org.springframework.remoting.rmi.RmiServiceExporter
  * @see org.springframework.remoting.caucho.HessianServiceExporter
+ *
+ * @tips Spring 开发小组意识到在 RMI服务和基于 HTTP 的服务（如 Hessian 和 BurLap）之间的空白。
+ * 一方面，RMI 使用 Java 标准的对象序列化，但是很难穿越防火墙；另一方面，Hessian/Burlap 能很好的穿过防火墙的工作，
+ * 但使用自己私有的一套对象序列化机制。
+ * 就这样，Spring 的 HttpInvoke应用而生。HttpInvoke 是一个新的远程调用模型，作为 Spring框架的一部分，来执行基于 HTTP 的远程调用（让防火墙
+ * 高兴的事），并使用Java的序列化机制（让程序员高兴地事）
  */
 public class HttpInvokerServiceExporter extends RemoteInvocationSerializingExporter implements HttpRequestHandler {
 
@@ -67,14 +73,19 @@ public class HttpInvokerServiceExporter extends RemoteInvocationSerializingExpor
 	 * @see #readRemoteInvocation(HttpServletRequest)
 	 * @see #invokeAndCreateResult(org.springframework.remoting.support.RemoteInvocation, Object)
 	 * @see #writeRemoteInvocationResult(HttpServletRequest, HttpServletResponse, RemoteInvocationResult)
+	 *
+	 * @tips 当有 web 请求时，根据配置中的规则会把路径匹配的访问直接引入对应的 HttpRequestHandler 中。
 	 */
 	@Override
 	public void handleRequest(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
 		try {
+			// 从 request 中读取序列化对象
 			RemoteInvocation invocation = readRemoteInvocation(request);
+			// 执行调用
 			RemoteInvocationResult result = invokeAndCreateResult(invocation, getProxy());
+			// 将结果的序列化对象写入输出流
 			writeRemoteInvocationResult(request, response, result);
 		}
 		catch (ClassNotFoundException ex) {
@@ -113,8 +124,10 @@ public class HttpInvokerServiceExporter extends RemoteInvocationSerializingExpor
 	protected RemoteInvocation readRemoteInvocation(HttpServletRequest request, InputStream is)
 			throws IOException, ClassNotFoundException {
 
+		// 创建对象输入流
 		ObjectInputStream ois = createObjectInputStream(decorateInputStream(request, is));
 		try {
+			// 从输入流中读取序列化对象
 			return doReadRemoteInvocation(ois);
 		}
 		finally {
@@ -170,9 +183,11 @@ public class HttpInvokerServiceExporter extends RemoteInvocationSerializingExpor
 			HttpServletRequest request, HttpServletResponse response, RemoteInvocationResult result, OutputStream os)
 			throws IOException {
 
+		// 获取输入流
 		ObjectOutputStream oos =
 				createObjectOutputStream(new FlushGuardedOutputStream(decorateOutputStream(request, response, os)));
 		try {
+			// 将序列化对象写入输入流
 			doWriteRemoteInvocationResult(result, oos);
 		}
 		finally {

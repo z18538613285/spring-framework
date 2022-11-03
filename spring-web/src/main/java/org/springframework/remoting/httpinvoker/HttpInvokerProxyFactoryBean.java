@@ -65,6 +65,7 @@ public class HttpInvokerProxyFactoryBean extends HttpInvokerClientInterceptor im
 		super.afterPropertiesSet();
 		Class<?> ifc = getServiceInterface();
 		Assert.notNull(ifc, "Property 'serviceInterface' is required");
+		// 创建代理类并使用当前方法为拦截器增强
 		this.serviceProxy = new ProxyFactory(ifc, this).getProxy(getBeanClassLoader());
 	}
 
