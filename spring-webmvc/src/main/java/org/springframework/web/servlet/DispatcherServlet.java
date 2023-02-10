@@ -185,6 +185,7 @@ import org.springframework.web.util.WebUtils;
  * 它们是 doDelete、doGet、doOptions、doPost、doPut 和 doTrace 方法
  *
  *
+ * 负责初始化 Spring MVC 的各个组件，以及处理客户端的请求
  */
 @SuppressWarnings("serial")
 public class DispatcherServlet extends FrameworkServlet {
@@ -552,6 +553,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	/**
 	 * Initialize the strategy objects that this servlet uses.
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
+	 *
+	 * @tips 初始化 SpringMVC 的组件
 	 */
 	protected void initStrategies(ApplicationContext context) {
 		initMultipartResolver(context);

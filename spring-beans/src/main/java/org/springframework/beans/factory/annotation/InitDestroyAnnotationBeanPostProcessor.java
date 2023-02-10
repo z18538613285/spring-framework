@@ -72,6 +72,8 @@ import org.springframework.util.ReflectionUtils;
  * @since 2.5
  * @see #setInitAnnotationType
  * @see #setDestroyAnnotationType
+ *
+ * @tips 主要用来处理 @PostConstruct 注解和 @PreDestroy
  */
 @SuppressWarnings("serial")
 public class InitDestroyAnnotationBeanPostProcessor
@@ -131,6 +133,13 @@ public class InitDestroyAnnotationBeanPostProcessor
 
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		/**
+		 * 首先会找
+		 * 到bean中有关生命周期的注解，比如@PostConstruct注解等，找到这些注解之后，则将这些信息赋值
+		 * 给LifecycleMetadata类型的变量metadata，之后调用metadata的invokeInitMethods()方法，通过反
+		 * 射来调用标注了@PostConstruct注解的方法。这就是为什么标注了@PostConstruct注解的方法被
+		 * Spring执行。
+		 */
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 		try {
 			metadata.invokeInitMethods(bean, beanName);

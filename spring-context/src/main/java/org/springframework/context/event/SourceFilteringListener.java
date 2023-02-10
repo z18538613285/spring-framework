@@ -33,11 +33,15 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @author Stephane Nicoll
  * @since 2.0.5
+ *
+ * @tips 实现 GenericApplicationListener、SmartApplicationListener 监听器，实现将原始对象触发的事件，转发给指定监听器。
  */
 public class SourceFilteringListener implements GenericApplicationListener, SmartApplicationListener {
 
+	// 原始类
 	private final Object source;
 
+	// 代理的监听器
 	@Nullable
 	private GenericApplicationListener delegate;
 
@@ -69,7 +73,9 @@ public class SourceFilteringListener implements GenericApplicationListener, Smar
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
-		if (event.getSource() == this.source) {
+		// 就是原始类 source 。如果是，则调用 #onApplicationEventInternal(ApplicationEvent event) 方法，
+		// 将事件转发给 delegate 监听器。
+		if (event.getSource() == this.source) { // 判断来源
 			onApplicationEventInternal(event);
 		}
 	}

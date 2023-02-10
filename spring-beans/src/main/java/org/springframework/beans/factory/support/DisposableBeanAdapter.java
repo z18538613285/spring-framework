@@ -255,6 +255,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 					}, this.acc);
 				}
 				else {
+					// 调用 DisposableBean 的销毁方法
 					((DisposableBean) this.bean).destroy();
 				}
 			}
@@ -269,6 +270,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 			}
 		}
 
+		// 调用自定义的销毁方法
 		if (this.destroyMethod != null) {
 			invokeCustomDestroyMethod(this.destroyMethod);
 		}

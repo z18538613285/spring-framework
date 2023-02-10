@@ -120,6 +120,9 @@ public interface BeanFactory {
 	 * beans <i>created</i> by the FactoryBean. For example, if the bean named
 	 * {@code myJndiObject} is a FactoryBean, getting {@code &myJndiObject}
 	 * will return the factory, not the instance returned by the factory.
+	 *
+	 * @tips 只要使用bean 的id 带有这个前缀 ‘&’来从Spring容器中获取 bean 时，
+	 * Spring 就会知道我们是在获取 FactoryBean 本身
 	 */
 	String FACTORY_BEAN_PREFIX = "&";
 

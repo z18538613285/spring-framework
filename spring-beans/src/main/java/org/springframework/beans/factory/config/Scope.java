@@ -70,6 +70,11 @@ public interface Scope {
 	 * object if it is not present in the underlying storage mechanism
 	 * @return the desired object (never {@code null})
 	 * @throws IllegalStateException if the underlying scope is not currently active
+	 *
+	 * @tips 返回当前作用域 name 对应的 bean 对象
+	 * name：需要检索的 bean 的名称
+	 * objectFactory：如果 name 对应的 bean 在当前作用域中没有找到，那么可以调用
+	 * 				这个 objectFactory 来创建这个对象
 	 */
 	Object get(String name, ObjectFactory<?> objectFactory);
 
@@ -88,6 +93,8 @@ public interface Scope {
 	 * @return the removed object, or {@code null} if no object was present
 	 * @throws IllegalStateException if the underlying scope is not currently active
 	 * @see #registerDestructionCallback
+	 *
+	 * @tips 将 name 对应的 bean 从当前作用域中移除
 	 */
 	@Nullable
 	Object remove(String name);
@@ -120,6 +127,9 @@ public interface Scope {
 	 * @see org.springframework.beans.factory.DisposableBean
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getDestroyMethodName()
 	 * @see DestructionAwareBeanPostProcessor
+	 *
+	 * @tips 用于注册销毁回调，如果想要销毁相应的对象,则由Spring容器注册相应的销毁回调，
+	 * 		而由自定义作用域选择是不是要销毁相应的对象
 	 */
 	void registerDestructionCallback(String name, Runnable callback);
 
@@ -129,6 +139,8 @@ public interface Scope {
 	 * @param key the contextual key
 	 * @return the corresponding object, or {@code null} if none found
 	 * @throws IllegalStateException if the underlying scope is not currently active
+	 *
+	 * @tips 用于解析相应的上下文数据，比如request作用域将返回request中的属性。
 	 */
 	@Nullable
 	Object resolveContextualObject(String key);
@@ -147,6 +159,8 @@ public interface Scope {
 	 * @return the conversation ID, or {@code null} if there is no
 	 * conversation ID for the current scope
 	 * @throws IllegalStateException if the underlying scope is not currently active
+	 *
+	 * @tips 作用域的会话标识，比如session作用域将是sessionId
 	 */
 	@Nullable
 	String getConversationId();

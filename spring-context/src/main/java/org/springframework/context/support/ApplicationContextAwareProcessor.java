@@ -57,6 +57,9 @@ import org.springframework.util.StringValueResolver;
  * @see org.springframework.context.MessageSourceAware
  * @see org.springframework.context.ApplicationContextAware
  * @see org.springframework.context.support.AbstractApplicationContext#refresh()
+ *
+ * @tips
+ * 这个类的作用是可以向组件中注入 IOC 容器
  */
 class ApplicationContextAwareProcessor implements BeanPostProcessor {
 
