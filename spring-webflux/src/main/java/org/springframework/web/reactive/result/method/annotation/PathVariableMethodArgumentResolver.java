@@ -51,6 +51,8 @@ import org.springframework.web.server.ServerWebExchange;
  * @author Juergen Hoeller
  * @since 5.0
  * @see PathVariableMapMethodArgumentResolver
+ *
+ * @tips 处理路径参数。
  */
 public class PathVariableMethodArgumentResolver extends AbstractNamedValueSyncArgumentResolver {
 
@@ -79,8 +81,10 @@ public class PathVariableMethodArgumentResolver extends AbstractNamedValueSyncAr
 
 	@Override
 	protected NamedValueInfo createNamedValueInfo(MethodParameter parameter) {
+		// 获得 @PathVariable 注解
 		PathVariable ann = parameter.getParameterAnnotation(PathVariable.class);
 		Assert.state(ann != null, "No PathVariable annotation");
+		// 创建 PathVariableNamedValueInfo 对象
 		return new PathVariableNamedValueInfo(ann);
 	}
 

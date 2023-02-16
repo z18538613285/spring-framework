@@ -46,6 +46,8 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @see org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter
  * @see org.springframework.web.servlet.handler.SimpleServletHandlerAdapter
+ *
+ * @tips 处理器适配器接口
  */
 public interface HandlerAdapter {
 
@@ -59,6 +61,10 @@ public interface HandlerAdapter {
 	 * }
 	 * @param handler handler object to check
 	 * @return whether or not this object can use the given handler
+	 *
+	 * @tips 是否支持该处理器
+	 * 因为，处理器 handler 的类型是 Object 类型，需要有一个调用者来实现 handler 是怎么被使用，怎么被执行。
+	 * 而 HandlerAdapter 的用途就在于此。可能如果接口名改成 HandlerInvoker ，觉得会更好理解。
 	 */
 	boolean supports(Object handler);
 
@@ -73,6 +79,8 @@ public interface HandlerAdapter {
 	 * @throws Exception in case of errors
 	 * @return a ModelAndView object with the name of the view and the required
 	 * model data, or {@code null} if the request has been handled directly
+	 *
+	 * @tips 执行处理器，返回 ModelAndView 结果
 	 */
 	@Nullable
 	ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception;
@@ -85,6 +93,9 @@ public interface HandlerAdapter {
 	 * @return the lastModified value for the given handler
 	 * @see javax.servlet.http.HttpServlet#getLastModified
 	 * @see org.springframework.web.servlet.mvc.LastModified#getLastModified
+	 *
+	 * @tips 返回请求的最新更新时间。
+	 * 如果不支持该操作，则返回 -1 即可
 	 */
 	long getLastModified(HttpServletRequest request, Object handler);
 

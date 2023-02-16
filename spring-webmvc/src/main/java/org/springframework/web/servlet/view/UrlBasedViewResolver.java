@@ -83,6 +83,8 @@ import org.springframework.web.servlet.View;
  * @see AbstractUrlBasedView
  * @see InternalResourceView
  * @see org.springframework.web.servlet.view.freemarker.FreeMarkerView
+ *
+ * @tips 基于 Url 的 ViewResolver 实现类。
  */
 public class UrlBasedViewResolver extends AbstractCachingViewResolver implements Ordered {
 
@@ -102,7 +104,11 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 */
 	public static final String FORWARD_URL_PREFIX = "forward:";
 
-
+	/**
+	 * View 的类型
+	 *
+	 * 不同的实现类，会对应一个 View 的类型
+	 */
 	@Nullable
 	private Class<?> viewClass;
 
@@ -119,13 +125,17 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 
 	@Nullable
 	private String[] redirectHosts;
-
+	/**
+	 * RequestAttributes 暴露给 View 使用时的属性
+	 */
 	@Nullable
 	private String requestContextAttribute;
 
 	/** Map of static attributes, keyed by attribute name (String). */
 	private final Map<String, Object> staticAttributes = new HashMap<>();
-
+	/**
+	 * 是否暴露路径变量给 View 使用
+	 */
 	@Nullable
 	private Boolean exposePathVariables;
 
@@ -134,7 +144,9 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 
 	@Nullable
 	private String[] exposedContextBeanNames;
-
+	/**
+	 * 是否只处理指定的视图名们
+	 */
 	@Nullable
 	private String[] viewNames;
 
@@ -439,7 +451,9 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 
 	@Override
 	protected void initApplicationContext() {
+		// 调用父类该方法，进行初始化
 		super.initApplicationContext();
+		// 校验 viewClass 非空
 		if (getViewClass() == null) {
 			throw new IllegalArgumentException("Property 'viewClass' is required");
 		}
@@ -449,6 +463,9 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	/**
 	 * This implementation returns just the view name,
 	 * as this ViewResolver doesn't support localized resolution.
+	 *
+	 * @tips 忽略 locale 参数，仅仅使用 viewName 作为缓存 KEY
+	 * 也就是说，不支持 Locale 特性。
 	 */
 	@Override
 	protected Object getCacheKey(String viewName, Locale locale) {
@@ -462,38 +479,49 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 * superclass always creating instances of the required view class.
 	 * @see #loadView
 	 * @see #requiredViewClass
+	 *
+	 * @tips 增加了对 REDIRECT、FORWARD 的情况的处理。
 	 */
 	@Override
 	protected View createView(String viewName, Locale locale) throws Exception {
 		// If this resolver is not supposed to handle the given view,
 		// return null to pass on to the next resolver in the chain.
 		// 如果当前解析器不支持当前解析器如 viewName 为空等情况
+		// 判断当前视图是否可以处理
 		if (!canHandle(viewName, locale)) {
 			return null;
 		}
 
 		// Check for special "redirect:" prefix.
 		// 处理前缀为 redirect：xx 的情况
+		// 如果是 REDIRECT 开头，创建 RedirectView 视图
 		if (viewName.startsWith(REDIRECT_URL_PREFIX)) {
+			// 创建 RedirectView 对象
 			String redirectUrl = viewName.substring(REDIRECT_URL_PREFIX.length());
 			RedirectView view = new RedirectView(redirectUrl,
 					isRedirectContextRelative(), isRedirectHttp10Compatible());
+			// 设置 RedirectView 对象的 hosts 属性
 			String[] hosts = getRedirectHosts();
 			if (hosts != null) {
 				view.setHosts(hosts);
 			}
+			// 应用
 			return applyLifecycleMethods(REDIRECT_URL_PREFIX, view);
 		}
 
 		// Check for special "forward:" prefix.
 		// 处理前缀为 forward：xx 的情况
+		// 如果是 FORWARD 开头，创建 InternalResourceView 视图
 		if (viewName.startsWith(FORWARD_URL_PREFIX)) {
+			// 创建 InternalResourceView 对象
 			String forwardUrl = viewName.substring(FORWARD_URL_PREFIX.length());
 			InternalResourceView view = new InternalResourceView(forwardUrl);
+			// 应用
 			return applyLifecycleMethods(FORWARD_URL_PREFIX, view);
 		}
 
 		// Else fall back to superclass implementation: calling loadView.
+		// 创建视图名对应的 View 对象
 		return super.createView(viewName, locale);
 	}
 
@@ -506,6 +534,9 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 * @param locale the Locale to retrieve the view for
 	 * @return whether this resolver applies to the specified view
 	 * @see org.springframework.util.PatternMatchUtils#simpleMatch(String, String)
+	 *
+	 * @tips 判断传入的视图名是否可以被处理
+	 * viewNames 为空，所以会满足 viewNames == null 代码块。也就说，所有视图名都可以被处理。
 	 */
 	protected boolean canHandle(String viewName, Locale locale) {
 		String[] viewNames = getViewNames();
@@ -526,11 +557,16 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 * @see #buildView(String)
 	 * @see org.springframework.context.ApplicationContextAware#setApplicationContext
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
+	 *
+	 * @tips 加载 viewName 对应的 View 对象。
 	 */
 	@Override
 	protected View loadView(String viewName, Locale locale) throws Exception {
+		// <x> 创建 viewName 对应的 View 对象
 		AbstractUrlBasedView view = buildView(viewName);
+		// 应用
 		View result = applyLifecycleMethods(viewName, view);
+		// 返回
 		return (view.checkResource(locale) ? result : null);
 	}
 
@@ -552,8 +588,11 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 		Class<?> viewClass = getViewClass();
 		Assert.state(viewClass != null, "No view class");
 
+		// 创建 AbstractUrlBasedView 对象
 		AbstractUrlBasedView view = (AbstractUrlBasedView) BeanUtils.instantiateClass(viewClass);
 		// 添加前缀和后缀
+		// 设置各种属性
+
 		view.setUrl(getPrefix() + viewName + getSuffix());
 
 		String contentType = getContentType();
@@ -595,6 +634,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 * @see org.springframework.beans.factory.config.AutowireCapableBeanFactory#initializeBean
 	 */
 	protected View applyLifecycleMethods(String viewName, AbstractUrlBasedView view) {
+		// 情况一，如果 viewName 有对应的 View Bean 对象，则使用它
 		ApplicationContext context = getApplicationContext();
 		if (context != null) {
 			Object initialized = context.getAutowireCapableBeanFactory().initializeBean(view, viewName);
@@ -602,6 +642,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 				return (View) initialized;
 			}
 		}
+		// 情况二，直接返回 view
 		return view;
 	}
 

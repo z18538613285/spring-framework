@@ -38,6 +38,8 @@ public interface HandlerMethodArgumentResolver {
 	 * @param parameter the method parameter to check
 	 * @return {@code true} if this resolver supports the supplied parameter;
 	 * {@code false} otherwise
+	 *
+	 * @tips 是否支持解析该参数
 	 */
 	boolean supportsParameter(MethodParameter parameter);
 
@@ -55,6 +57,8 @@ public interface HandlerMethodArgumentResolver {
 	 * @param binderFactory a factory for creating {@link WebDataBinder} instances
 	 * @return the resolved argument value, or {@code null} if not resolvable
 	 * @throws Exception in case of errors with the preparation of argument values
+	 *
+	 * @tips 解析该参数
 	 */
 	@Nullable
 	Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,

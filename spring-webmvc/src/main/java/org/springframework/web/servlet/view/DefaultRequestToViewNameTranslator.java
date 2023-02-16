@@ -53,24 +53,40 @@ import org.springframework.web.util.UrlPathHelper;
  * @since 2.0
  * @see org.springframework.web.servlet.RequestToViewNameTranslator
  * @see org.springframework.web.servlet.ViewResolver
+ *
+ * @tips 默认且是唯一的 RequestToViewNameTranslator 实现类。
  */
 public class DefaultRequestToViewNameTranslator implements RequestToViewNameTranslator {
 
 	private static final String SLASH = "/";
 
-
+	/**
+	 * 前缀
+	 */
 	private String prefix = "";
-
+	/**
+	 * 后缀
+	 */
 	private String suffix = "";
-
+	/**
+	 * 分隔符
+	 */
 	private String separator = SLASH;
-
+	/**
+	 * 是否移除开头 {@link #SLASH}
+	 */
 	private boolean stripLeadingSlash = true;
-
+	/**
+	 * 是否移除末尾 {@link #SLASH}
+	 */
 	private boolean stripTrailingSlash = true;
-
+	/**
+	 * 是否移除拓展名
+	 */
 	private boolean stripExtension = true;
-
+	/**
+	 * URL 路径工具类
+	 */
 	private UrlPathHelper urlPathHelper = new UrlPathHelper();
 
 
@@ -167,7 +183,9 @@ public class DefaultRequestToViewNameTranslator implements RequestToViewNameTran
 	 */
 	@Override
 	public String getViewName(HttpServletRequest request) {
+		// 获得请求路径
 		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request);
+		// 获得视图名
 		return (this.prefix + transformPath(lookupPath) + this.suffix);
 	}
 
@@ -178,19 +196,25 @@ public class DefaultRequestToViewNameTranslator implements RequestToViewNameTran
 	 * as determined by the UrlPathHelper
 	 * @return the transformed path, with slashes and extensions stripped
 	 * if desired
+	 *
+	 * @tips 转换请求路径，后续在拼接上 prefix 和 suffix ，形成最终的视图名。
 	 */
 	@Nullable
 	protected String transformPath(String lookupPath) {
 		String path = lookupPath;
+		// 移除开头 SLASH
 		if (this.stripLeadingSlash && path.startsWith(SLASH)) {
 			path = path.substring(1);
 		}
+		// 移除末尾 SLASH
 		if (this.stripTrailingSlash && path.endsWith(SLASH)) {
 			path = path.substring(0, path.length() - 1);
 		}
+		// 移除拓展名
 		if (this.stripExtension) {
 			path = StringUtils.stripFilenameExtension(path);
 		}
+		// 替换分隔符
 		if (!SLASH.equals(this.separator)) {
 			path = StringUtils.replace(path, SLASH, this.separator);
 		}

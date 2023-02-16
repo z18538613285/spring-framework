@@ -73,12 +73,18 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Brian Clozel
  * @since 3.1
  * @see RequestParamMapMethodArgumentResolver
+ *
+ * @tips 处理普通的请求参数。
  */
 public class RequestParamMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver
 		implements UriComponentsContributor {
 
 	private static final TypeDescriptor STRING_TYPE_DESCRIPTOR = TypeDescriptor.valueOf(String.class);
-
+	/**
+	 * 是否使用默认解决。
+	 *
+	 * 这个变量有点绕，见 {@link #supportsParameter(MethodParameter)} 方法
+	 */
 	private final boolean useDefaultResolution;
 
 
@@ -124,41 +130,66 @@ public class RequestParamMethodArgumentResolver extends AbstractNamedValueMethod
 	 */
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 有 @RequestParam 注解的情况
 		if (parameter.hasParameterAnnotation(RequestParam.class)) {
+			// <3> 如果是 Map 类型，则 @RequestParam 注解必须要有 name 属性
 			if (Map.class.isAssignableFrom(parameter.nestedIfOptional().getNestedParameterType())) {
 				RequestParam requestParam = parameter.getParameterAnnotation(RequestParam.class);
 				return (requestParam != null && StringUtils.hasText(requestParam.name()));
 			}
+			// 其它，默认支持
 			else {
 				return true;
 			}
 		}
 		else {
+			// 如果有 @RequestPart 注解，返回 false 。即 @RequestPart 的优先级 > @RequestParam
 			if (parameter.hasParameterAnnotation(RequestPart.class)) {
 				return false;
 			}
+			// 获得参数，如果存在内嵌的情况
 			parameter = parameter.nestedIfOptional();
+			// <1> 如果 Multipart 参数。则返回 true ，表示支持
 			if (MultipartResolutionDelegate.isMultipartArgument(parameter)) {
 				return true;
 			}
+			// <2> 如果开启 useDefaultResolution 功能，则判断是否为普通类型
 			else if (this.useDefaultResolution) {
 				return BeanUtils.isSimpleProperty(parameter.getNestedParameterType());
 			}
+			// 其它，不支持
 			else {
 				return false;
 			}
 		}
 	}
 
+	/**
+	 * 创建 NamedValueInfo 对象。
+	 *
+	 * @param parameter the method parameter
+	 * @return
+	 */
 	@Override
 	protected NamedValueInfo createNamedValueInfo(MethodParameter parameter) {
 		RequestParam ann = parameter.getParameterAnnotation(RequestParam.class);
 		return (ann != null ? new RequestParamNamedValueInfo(ann) : new RequestParamNamedValueInfo());
 	}
 
+	/**
+ 	 * 获得参数的值
+	 *
+	 * @param name the name of the value being resolved
+	 * @param parameter the method parameter to resolve to an argument value
+	 * (pre-nested in case of a {@link java.util.Optional} declaration)
+	 * @param request the current request
+	 * @return
+	 * @throws Exception
+	 */
 	@Override
 	@Nullable
 	protected Object resolveName(String name, MethodParameter parameter, NativeWebRequest request) throws Exception {
+		// 情况一，HttpServletRequest 情况下的 MultipartFile 和 Part 的情况
 		HttpServletRequest servletRequest = request.getNativeRequest(HttpServletRequest.class);
 
 		if (servletRequest != null) {
@@ -168,6 +199,7 @@ public class RequestParamMethodArgumentResolver extends AbstractNamedValueMethod
 			}
 		}
 
+		// 情况二，MultipartHttpServletRequest 情况下的 MultipartFile 的情况
 		Object arg = null;
 		MultipartRequest multipartRequest = request.getNativeRequest(MultipartRequest.class);
 		if (multipartRequest != null) {
@@ -176,6 +208,7 @@ public class RequestParamMethodArgumentResolver extends AbstractNamedValueMethod
 				arg = (files.size() == 1 ? files.get(0) : files);
 			}
 		}
+		// 情况三，普通参数的获取 就是常见的 String、Integer 之类的请求参数
 		if (arg == null) {
 			String[] paramValues = request.getParameterValues(name);
 			if (paramValues != null) {
@@ -257,6 +290,9 @@ public class RequestParamMethodArgumentResolver extends AbstractNamedValueMethod
 
 	private static class RequestParamNamedValueInfo extends NamedValueInfo {
 
+		/**
+		 * 在无 @RequestMapping 时，返回的 RequestParamNamedValueInfo 对象的 name 属性为 ""
+		 */
 		public RequestParamNamedValueInfo() {
 			super("", false, ValueConstants.DEFAULT_NONE);
 		}

@@ -41,17 +41,38 @@ import org.springframework.web.servlet.ModelAndView;
  * @author Rossen Stoyanchev
  * @author Brian Clozel
  * @since 3.0
+ *
+ * @tips 支持地址匹配的 HandlerInterceptor 实现类。
+ * <mvc:interceptors>
+ *     <mvc:interceptor>
+ *         <mvc:mapping path="/interceptor/**" />
+ *         <mvc:exclude-mapping path="/interceptor/b/*" />
+ *         <bean class="com.elim.learn.spring.mvc.interceptor.MyInterceptor" />
+ *     </mvc:interceptor>
+ * </mvc:interceptors>
+ *
+ * 每一个 <mvc:interceptor /> 标签，将被解析成一个 MappedInterceptor Bean 对象。
  */
 public final class MappedInterceptor implements HandlerInterceptor {
-
+	/**
+	 * 匹配的路径
+	 */
 	@Nullable
 	private final String[] includePatterns;
-
+	/**
+	 * 不匹配的路径
+	 */
 	@Nullable
 	private final String[] excludePatterns;
-
+	/**
+	 * HandlerInterceptor 拦截器对象
+	 *
+	 * includePatterns + excludePatterns + pathMatcher 属性，匹配路径
+	 */
 	private final HandlerInterceptor interceptor;
-
+	/**
+	 * 路径匹配器
+	 */
 	@Nullable
 	private PathMatcher pathMatcher;
 
@@ -142,20 +163,27 @@ public final class MappedInterceptor implements HandlerInterceptor {
 	 * @param lookupPath the current request path
 	 * @param pathMatcher a path matcher for path pattern matching
 	 * @return {@code true} if the interceptor applies to the given request path
+	 *
+	 * @tips 判断路径是否匹配
 	 */
 	public boolean matches(String lookupPath, PathMatcher pathMatcher) {
 		PathMatcher pathMatcherToUse = (this.pathMatcher != null ? this.pathMatcher : pathMatcher);
+		// 先排重
 		if (!ObjectUtils.isEmpty(this.excludePatterns)) {
 			for (String pattern : this.excludePatterns) {
+				// 匹配
 				if (pathMatcherToUse.match(pattern, lookupPath)) {
 					return false;
 				}
 			}
 		}
+		// 特殊，如果包含为空，则默认就是包含
 		if (ObjectUtils.isEmpty(this.includePatterns)) {
 			return true;
 		}
+		// 后包含
 		for (String pattern : this.includePatterns) {
+			// 匹配
 			if (pathMatcherToUse.match(pattern, lookupPath)) {
 				return true;
 			}
@@ -163,6 +191,15 @@ public final class MappedInterceptor implements HandlerInterceptor {
 		return false;
 	}
 
+	/**
+	 * 直接调用拦截器对应的方法。
+	 *
+	 * @param request current HTTP request
+	 * @param response current HTTP response
+	 * @param handler chosen handler to execute, for type and/or instance evaluation
+	 * @return
+	 * @throws Exception
+	 */
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {

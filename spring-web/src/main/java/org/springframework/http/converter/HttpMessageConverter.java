@@ -31,6 +31,20 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @since 3.0
  * @param <T> the converted object type
+ *
+ * @tips 对消息转换器最高层次的接口抽象，描述了一个消息转换器的一般特征
+ *
+ * @RequestMapping(value = "/string", method = RequestMethod.POST)
+ * public @ResponseBody String readString(@RequestBody String string) {
+ *     return "Read string '" + string + "'";
+ * }
+ * 在 SpringMVC 进入 #readString(...) 方法前，会根据 @RequestBody 注解选择适当的 HttpMessageConverter 实现类
+ * 来将请求参数解析到 string 变量中，具体来说是使用了 StringHttpMessageConverter 类，它的 #canRead(...) 方法返回 true，
+ * 然后它的 #read(...) 方法会从请求中读出请求参数，绑定到 #readString(@RequestBody String string) 方法的 string 变量中。
+ *
+ * 当 Spring MVC 执行 #readString(@RequestBody String string) 方法后，由于返回值标识了 @ResponseBody 注解，
+ * Spring MVC 将使用 StringHttpMessageConverter 的 #write(...) 方法，将结果作为 String 值写入响应报文，
+ * 当然，此时 #canWrite(....) 方法返回 true 。
  */
 public interface HttpMessageConverter<T> {
 

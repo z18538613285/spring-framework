@@ -81,6 +81,10 @@ import javax.servlet.http.HttpServletRequest;
  * @see org.springframework.web.multipart.support.ByteArrayMultipartFileEditor
  * @see org.springframework.web.multipart.support.StringMultipartFileEditor
  * @see org.springframework.web.servlet.DispatcherServlet
+ *
+ * @tips 内容类型( Content-Type )为 multipart/* 的请求的解析器接口。
+ * 例如，文件上传请求，MultipartResolver 会将 HttpServletRequest 封装成 MultipartHttpServletRequest ，
+ * 这样从 MultipartHttpServletRequest 中获得上传的文件。
  */
 public interface MultipartResolver {
 
@@ -90,6 +94,8 @@ public interface MultipartResolver {
 	 * accepted requests might depend on the capabilities of the resolver implementation.
 	 * @param request the servlet request to be evaluated
 	 * @return whether the request contains multipart content
+	 *
+	 * @tips 是否为 multipart 请求
 	 */
 	boolean isMultipart(HttpServletRequest request);
 
@@ -109,6 +115,8 @@ public interface MultipartResolver {
 	 * @see javax.servlet.http.HttpServletRequest#getParameter
 	 * @see javax.servlet.http.HttpServletRequest#getParameterNames
 	 * @see javax.servlet.http.HttpServletRequest#getParameterMap
+	 *
+	 * @tips 将 HttpServletRequest 请求封装成 MultipartHttpServletRequest 对象
 	 */
 	MultipartHttpServletRequest resolveMultipart(HttpServletRequest request) throws MultipartException;
 
@@ -116,6 +124,8 @@ public interface MultipartResolver {
 	 * Cleanup any resources used for the multipart handling,
 	 * like a storage for the uploaded files.
 	 * @param request the request to cleanup resources for
+	 *
+	 * @tips  清理处理 multipart 产生的资源，例如临时文件
 	 */
 	void cleanupMultipart(MultipartHttpServletRequest request);
 

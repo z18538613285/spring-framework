@@ -32,6 +32,10 @@ import org.springframework.web.servlet.support.WebContentGenerator;
  *
  * @author Arjen Poutsma
  * @since 3.1
+ *
+ * @tips AbstractHandlerMethodMapping 对应  AbstractHandlerMethodAdapter 。
+ * RequestMappingInfoHandlerMapping 对应  RequestMappingHandlerAdapter 。
+ * 基于 org.springframework.web.method.HandlerMethod 的 HandlerMethodAdapter 抽象类
  */
 public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator implements HandlerAdapter, Ordered {
 
@@ -40,6 +44,8 @@ public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator i
 
 	public AbstractHandlerMethodAdapter() {
 		// no restriction of HTTP methods by default
+		// 调用 WebContentGenerator 类的构造方法
+		// 参数 restrictDefaultSupportedMethods 参数为 false ，表示不需要严格校验 HttpMethod
 		super(false);
 	}
 
@@ -63,6 +69,8 @@ public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator i
 	 * This implementation expects the handler to be an {@link HandlerMethod}.
 	 * @param handler the handler instance to check
 	 * @return whether or not this adapter can adapt the given handler
+	 *
+	 * @tips 支持 HandlerMethod 类型的处理器
 	 */
 	@Override
 	public final boolean supports(Object handler) {
