@@ -33,10 +33,17 @@ import org.springframework.lang.Nullable;
  * @since 4.2
  * @see SmartApplicationListener
  * @see GenericApplicationListenerAdapter
+ *
+ * @tips 它增强了对泛型的支持，#supportsEventType(ResolvableType) 方法的参数采用的是可解析类型 ResolvableType
+ * ResolvableType是 Spring4 提供的泛型操作支持类，通过它可以很容易地获得泛型的实际类型信息，比如类级、字段级等等泛型信息。
+ * 在 Spring4 的框架中，很多核心类内部涉及的泛型操作大都使用 ResolvableType 类进行处理。
+ *
  */
 public interface GenericApplicationListener extends ApplicationListener<ApplicationEvent>, Ordered {
 
 	/**
+	 * 事件类型【有变动】
+	 *
 	 * Determine whether this listener actually supports the given event type.
 	 * @param eventType the event type (never {@code null})
 	 */
@@ -46,6 +53,8 @@ public interface GenericApplicationListener extends ApplicationListener<Applicat
 	 * Determine whether this listener actually supports the given source type.
 	 * <p>The default implementation always returns {@code true}.
 	 * @param sourceType the source type, or {@code null} if no source
+	 *
+	 * @tips 事件来源
 	 */
 	default boolean supportsSourceType(@Nullable Class<?> sourceType) {
 		return true;
