@@ -28,6 +28,8 @@ import org.springframework.lang.Nullable;
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
+ *
+ * @tips 请求到视图名的转换器接口
  */
 public interface RequestToViewNameTranslator {
 
@@ -37,6 +39,9 @@ public interface RequestToViewNameTranslator {
 	 * the context from which a view name is to be resolved
 	 * @return the view name, or {@code null} if no default found
 	 * @throws Exception if view name translation fails
+	 *
+	 * @tips 根据请求，获得其视图名
+	 * 在 ModelAndView 不存在对应的视图时，会通过 RequestToViewNameTranslator 来获取默认的视图名，作为其视图。
 	 */
 	@Nullable
 	String getViewName(HttpServletRequest request) throws Exception;

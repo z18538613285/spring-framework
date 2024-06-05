@@ -39,6 +39,8 @@ import org.springframework.util.Assert;
  *
  * @author Juergen Hoeller
  * @since 3.0
+ *
+ * @tips 这类的作用主要用来为 bean 进行校验操作
  */
 public class BeanValidationPostProcessor implements BeanPostProcessor, InitializingBean {
 
@@ -85,6 +87,16 @@ public class BeanValidationPostProcessor implements BeanPostProcessor, Initializ
 	}
 
 
+	/**
+	 * 如果afterInitialization的值为false，则在
+	 * postProcessBeforeInitialization()方法中调用doValidate()方法对bean进行校验；如果
+	 * afterInitialization的值为true，则在postProcessAfterInitialization()方法中调用doValidate()方法对
+	 * bean进行校验。
+	 * @param bean the new bean instance
+	 * @param beanName the name of the bean
+	 * @return
+	 * @throws BeansException
+	 */
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		if (!this.afterInitialization) {

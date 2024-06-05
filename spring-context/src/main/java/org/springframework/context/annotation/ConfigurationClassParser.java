@@ -847,6 +847,7 @@ class ConfigurationClassParser {
 	}
 
 
+
 	private static class DeferredImportSelectorGrouping {
 
 		private final DeferredImportSelector.Group group;
@@ -868,8 +869,10 @@ class ConfigurationClassParser {
 		public Iterable<Group.Entry> getImports() {
 			for (DeferredImportSelectorHolder deferredImport : this.deferredImports) {
 				this.group.process(deferredImport.getConfigurationClass().getMetadata(),
+						// 处理被 @Import 注解的注解
 						deferredImport.getImportSelector());
 			}
+			// 选择需要导入的 这里是导入的 Configuration 配置类。
 			return this.group.selectImports();
 		}
 	}

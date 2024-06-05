@@ -59,6 +59,18 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
  * @since 3.1
+ *
+ * @tips 处理请求参数添加了 @RequestBody 注解，或者返回值添加了 @ResponseBody 注解的处理。
+ * 因为前后端分离之后，后端基本是提供 Restful API ，所以 RequestResponseBodyMethodProcessor 成为了目前最常用的 HandlerMethodReturnValueHandler 实现类。
+ *
+ * 这个类同时实现了 HandlerMethodArgumentResolver 和 HandlerMethodReturnValueHandler 两个接口。
+ * 前者是将请求报文绑定到处理方法形参的策略接口，后者则是对处理方法返回值进行处理的策略接口。
+ *
+ * 同时充当了方法参数解析和返回值处理两种角色
+ *
+ * 整个 HttpMessageConverter 消息转换的脉络已经非常清晰。
+ * 因为两个接口的实现，分别是以是否有 @RequestBody 和 @ResponseBody 为条件，
+ * 然后分别调用 HttpMessageConverter 来进行消息的读写。
  */
 public class RequestResponseBodyMethodProcessor extends AbstractMessageConverterMethodProcessor {
 
@@ -88,6 +100,10 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 	 * For handling {@code @ResponseBody} consider also providing a
 	 * {@code ContentNegotiationManager}.
 	 * @since 4.2
+	 *
+	 * @tips converters 参数，HttpMessageConverter 数组。
+	 * 关于 HttpMessageConverter 。例如，我们想要将 POJO 对象，返回成 JSON 数据给前端，就会使用到 MappingJackson2HttpMessageConverter 类。
+	 * requestResponseBodyAdvice 参数，一般情况是 ResponseBodyAdvice 类型，可实现对返回结果的修改。
 	 */
 	public RequestResponseBodyMethodProcessor(List<HttpMessageConverter<?>> converters,
 			@Nullable List<Object> requestResponseBodyAdvice) {
@@ -111,6 +127,12 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 		return parameter.hasParameterAnnotation(RequestBody.class);
 	}
 
+	/**
+	 * 判断是否添加 @ResponseBody 注解
+	 *
+	 * @param returnType the method return type to check
+	 * @return
+	 */
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
 		return (AnnotatedElementUtils.hasAnnotation(returnType.getContainingClass(), ResponseBody.class) ||
@@ -173,11 +195,14 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest)
 			throws IOException, HttpMediaTypeNotAcceptableException, HttpMessageNotWritableException {
 
+		// <1> 设置已处理
 		mavContainer.setRequestHandled(true);
+		// <2> 创建请求和响应
 		ServletServerHttpRequest inputMessage = createInputMessage(webRequest);
 		ServletServerHttpResponse outputMessage = createOutputMessage(webRequest);
 
 		// Try even with null return value. ResponseBodyAdvice could get involved.
+		// <3> 使用 HttpMessageConverter 对对象进行转换，并写入到响应
 		writeWithMessageConverters(returnValue, returnType, inputMessage, outputMessage);
 	}
 

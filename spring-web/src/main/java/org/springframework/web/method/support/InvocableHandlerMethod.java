@@ -40,11 +40,18 @@ import org.springframework.web.method.HandlerMethod;
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
  * @since 3.1
+ *
+ * @tips 继承 HandlerMethod 类，可 invoke 调用的 HandlerMethod 实现类。
+ * 也就是说，HandlerMethod 只提供了处理器的方法的基本信息，不提供调用逻辑。
  */
 public class InvocableHandlerMethod extends HandlerMethod {
 
 	private static final Object[] EMPTY_ARGS = new Object[0];
 
+	/**
+	 * dataBinderFactory、argumentResolvers、parameterNameDiscoverer 参数，
+	 * 是通过 setting 方法，进行设置。
+	 */
 
 	private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
 
@@ -131,10 +138,12 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
 			Object... providedArgs) throws Exception {
 
+		// <y> 解析参数
 		Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Arguments: " + Arrays.toString(args));
 		}
+		// 执行调用
 		return doInvoke(args);
 	}
 
@@ -147,27 +156,36 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	protected Object[] getMethodArgumentValues(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
 			Object... providedArgs) throws Exception {
 
+		// 方法的参数信息的数组
 		MethodParameter[] parameters = getMethodParameters();
 		if (ObjectUtils.isEmpty(parameters)) {
 			return EMPTY_ARGS;
 		}
 
+		// 解析后的参数结果数组
 		Object[] args = new Object[parameters.length];
+		// 遍历，开始解析
 		for (int i = 0; i < parameters.length; i++) {
+			// 获得当前遍历的 MethodParameter 对象，并设置 parameterNameDiscoverer 到其中
 			MethodParameter parameter = parameters[i];
 			parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
+			// <1> 先从 providedArgs 中获得参数。如果获得到，则进入下一个参数的解析
 			args[i] = findProvidedArgument(parameter, providedArgs);
 			if (args[i] != null) {
 				continue;
 			}
+			// <2> 判断 argumentResolvers 是否支持当前的参数解析
 			if (!this.resolvers.supportsParameter(parameter)) {
+				// 解析失败，抛出 IllegalStateException 异常
 				throw new IllegalStateException(formatArgumentError(parameter, "No suitable resolver"));
 			}
 			try {
+				// 执行解析。解析成功后，则进入下一个参数的解析
 				args[i] = this.resolvers.resolveArgument(parameter, mavContainer, request, this.dataBinderFactory);
 			}
 			catch (Exception ex) {
 				// Leave stack trace for later, exception may actually be resolved and handled...
+				// 解析失败，打印日志，并抛出异常
 				if (logger.isDebugEnabled()) {
 					String exMsg = ex.getMessage();
 					if (exMsg != null && !exMsg.contains(parameter.getExecutable().toGenericString())) {
@@ -185,8 +203,12 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 */
 	@Nullable
 	protected Object doInvoke(Object... args) throws Exception {
+		// <z1> 设置方法为可访问
 		ReflectionUtils.makeAccessible(getBridgedMethod());
 		try {
+			// <z2> 执行调用
+			// 反射调用 @RequestMapping 注解的方法。，InvocableHandlerMethod 是 HandlerMethod 的子类，
+			// 所以通过 HandlerMethod 的 #getBridgedMethod() 方法，可以获得对应的 @RequestMapping 注解的方法。
 			return getBridgedMethod().invoke(getBean(), args);
 		}
 		catch (IllegalArgumentException ex) {

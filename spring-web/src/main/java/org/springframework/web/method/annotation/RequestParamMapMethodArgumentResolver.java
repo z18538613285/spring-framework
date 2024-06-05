@@ -57,6 +57,29 @@ import org.springframework.web.multipart.support.MultipartResolutionDelegate;
  * @see HttpServletRequest#getParameterMap()
  * @see MultipartRequest#getMultiFileMap()
  * @see MultipartRequest#getFileMap()
+ *
+ * @tips 处理带有 @RequestParam 注解，但是注解上无 name 属性的 Map 类型的参数的 RequestParamMethodArgumentResolver 实现类
+ *
+ * ①对于 RequestParamMapMethodArgumentResolver 类，它的效果是，将所有参数添加到 Map 集合中。示例如下：
+ *
+ * // Controller.java
+ *
+ * @RequestMapping("/hello4")
+ * public String hello4(@RequestParam Map<String, Object> map) {
+ *     return "666";
+ * }
+ * GET /hello4?name=yyy&age=20 的 name 和 age 参数，就会都添加到 map 中。
+ *
+ * ② 对于 RequestParamMethodArgumentResolver 类，它的效果是，将指定名字的参数添加到 Map 集合中。示例如下：
+ *
+ * // Controller.java
+ *
+ * @RequestMapping("/hello5")
+ * public String hello5(@RequestParam(name = "map") Map<String, Object> map) {
+ *     return "666";
+ * }
+ * GET /hello4?map={"name": "yyyy", age: 20} 的 map 参数，就会都添加到 map 中。
+ * 当然，要注意下，实际请求要 UrlEncode 编码下参数，所以实际请求是 GET /hello4?map=%7b%22name%22%3a+%22yyyy%22%2c+age%3a+20%7d 。
  */
 public class RequestParamMapMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -93,6 +116,7 @@ public class RequestParamMapMethodArgumentResolver implements HandlerMethodArgum
 				return new LinkedMultiValueMap<>(0);
 			}
 			else {
+				// 获得请求的参数集合
 				Map<String, String[]> parameterMap = webRequest.getParameterMap();
 				MultiValueMap<String, String> result = new LinkedMultiValueMap<>(parameterMap.size());
 				parameterMap.forEach((key, values) -> {
@@ -125,6 +149,7 @@ public class RequestParamMapMethodArgumentResolver implements HandlerMethodArgum
 				}
 				return new LinkedHashMap<>(0);
 			}
+			// 普通 Map 类型的处理
 			else {
 				Map<String, String[]> parameterMap = webRequest.getParameterMap();
 				Map<String, String> result = new LinkedHashMap<>(parameterMap.size());

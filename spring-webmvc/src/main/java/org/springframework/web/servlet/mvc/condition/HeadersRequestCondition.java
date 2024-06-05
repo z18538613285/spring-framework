@@ -119,6 +119,7 @@ public final class HeadersRequestCondition extends AbstractRequestCondition<Head
 				return null;
 			}
 		}
+		// 空的情况下，就返回自身
 		return this;
 	}
 

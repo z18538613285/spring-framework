@@ -170,6 +170,8 @@ import org.springframework.web.util.UrlPathHelper;
  * @since 3.1
  * @see EnableWebMvc
  * @see WebMvcConfigurer
+ *
+ * @tips 在默认配置的 Spring Boot 场景下，是通过 WebMvcConfigurationSupport 的 #handlerExceptionResolver() 方法，进行初始化。
  */
 public class WebMvcConfigurationSupport implements ApplicationContextAware, ServletContextAware {
 
@@ -275,6 +277,9 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	public RequestMappingHandlerMapping requestMappingHandlerMapping() {
 		RequestMappingHandlerMapping mapping = createRequestMappingHandlerMapping();
 		mapping.setOrder(0);
+		/**
+		 * 而通过这样的方式的方式配置拦截器，最终通过 AbstractMappingHandler 的 #setInterceptors(Object... interceptors) 方法，设置到 MappingHandler 中
+		 */
 		mapping.setInterceptors(getInterceptors());
 		mapping.setContentNegotiationManager(mvcContentNegotiationManager());
 		mapping.setCorsConfigurations(getCorsConfigurations());
@@ -325,13 +330,19 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * <p>This method cannot be overridden; use {@link #addInterceptors} instead.
 	 */
 	protected final Object[] getInterceptors() {
+		// 若 interceptors 未初始化，则进行初始化
 		if (this.interceptors == null) {
+			// 创建 InterceptorRegistry 对象
 			InterceptorRegistry registry = new InterceptorRegistry();
+			// 添加拦截器到 interceptors 中
 			addInterceptors(registry);
+			// 添加内置拦截器到 interceptors 中
 			registry.addInterceptor(new ConversionServiceExposingInterceptor(mvcConversionService()));
 			registry.addInterceptor(new ResourceUrlProviderExposingInterceptor(mvcResourceUrlProvider()));
+			// 初始化到 interceptors 属性
 			this.interceptors = registry.getInterceptors();
 		}
+		// 若 interceptors 已初始化，则直接返回
 		return this.interceptors.toArray();
 	}
 
@@ -880,11 +891,15 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public HandlerExceptionResolver handlerExceptionResolver() {
+		// <1> 创建 HandlerExceptionResolver 数组
 		List<HandlerExceptionResolver> exceptionResolvers = new ArrayList<>();
+		// <1.1> 添加配置的 HandlerExceptionResolver 到 exceptionResolvers 中
 		configureHandlerExceptionResolvers(exceptionResolvers);
+		// <1.2> 如果 exceptionResolvers 为空，添加默认 HandlerExceptionResolver 数组
 		if (exceptionResolvers.isEmpty()) {
 			addDefaultHandlerExceptionResolvers(exceptionResolvers);
 		}
+		// <1.3> 子类定义的 HandlerExceptionResolver 数组，到 exceptionResolvers 中
 		extendHandlerExceptionResolvers(exceptionResolvers);
 		HandlerExceptionResolverComposite composite = new HandlerExceptionResolverComposite();
 		composite.setOrder(0);
@@ -927,6 +942,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * </ul>
 	 */
 	protected final void addDefaultHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
+		// 创建 ExceptionHandlerExceptionResolver 对象
 		ExceptionHandlerExceptionResolver exceptionHandlerResolver = createExceptionHandlerExceptionResolver();
 		exceptionHandlerResolver.setContentNegotiationManager(mvcContentNegotiationManager());
 		exceptionHandlerResolver.setMessageConverters(getMessageConverters());
@@ -942,10 +958,12 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		exceptionHandlerResolver.afterPropertiesSet();
 		exceptionResolvers.add(exceptionHandlerResolver);
 
+		// 创建 ResponseStatusExceptionResolver 对象
 		ResponseStatusExceptionResolver responseStatusResolver = new ResponseStatusExceptionResolver();
 		responseStatusResolver.setMessageSource(this.applicationContext);
 		exceptionResolvers.add(responseStatusResolver);
 
+		// 创建 DefaultHandlerExceptionResolver 对象
 		exceptionResolvers.add(new DefaultHandlerExceptionResolver());
 	}
 

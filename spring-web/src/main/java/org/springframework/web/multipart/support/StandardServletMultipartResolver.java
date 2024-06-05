@@ -57,9 +57,15 @@ import org.springframework.web.multipart.MultipartResolver;
  * @see #setResolveLazily
  * @see HttpServletRequest#getParts()
  * @see org.springframework.web.multipart.commons.CommonsMultipartResolver
+ *
+ * @tips 使用 Servlet 3.0 标准的上传 API 的 MultipartResolver 实现类。
  */
 public class StandardServletMultipartResolver implements MultipartResolver {
 
+	/**
+	 * 是否延迟解析
+	 * 就是是否在需要获得对应文件时，在进行文件的解析。
+	 */
 	private boolean resolveLazily = false;
 
 
@@ -84,9 +90,16 @@ public class StandardServletMultipartResolver implements MultipartResolver {
 
 	@Override
 	public MultipartHttpServletRequest resolveMultipart(HttpServletRequest request) throws MultipartException {
+		// 如果此处传入的 resolveLazily = true ，则不会进行解析。
 		return new StandardMultipartHttpServletRequest(request, this.resolveLazily);
 	}
 
+	/**
+	 * 删除临时的 javax.servlet.http.Part 们
+	 *
+	 * @param request the request to cleanup resources for
+	 *
+	 */
 	@Override
 	public void cleanupMultipart(MultipartHttpServletRequest request) {
 		if (!(request instanceof AbstractMultipartHttpServletRequest) ||
@@ -94,6 +107,7 @@ public class StandardServletMultipartResolver implements MultipartResolver {
 			// To be on the safe side: explicitly delete the parts,
 			// but only actual file parts (for Resin compatibility)
 			try {
+				// 删除临时的 Part 们
 				for (Part part : request.getParts()) {
 					if (request.getFile(part.getName()) != null) {
 						part.delete();

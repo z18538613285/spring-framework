@@ -78,6 +78,9 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * @see #initServletBean
  * @see #doGet
  * @see #doPost
+ *
+ * @tips 负责将 ServletConfig 设置到当前 Servlet 对象中
+ * 负责将 ServletConfig 集成到 Spring 中
  */
 @SuppressWarnings("serial")
 public abstract class HttpServletBean extends HttpServlet implements EnvironmentCapable, EnvironmentAware {
@@ -88,6 +91,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	@Nullable
 	private ConfigurableEnvironment environment;
 
+	// 必须配置的属性的集合
 	private final Set<String> requiredProperties = new HashSet<>(4);
 
 
@@ -99,6 +103,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	 * <p>This method is only relevant in case of traditional initialization
 	 * driven by a ServletConfig instance.
 	 * @param property name of the required property
+	 *
+	 * @tips 必须配置的属性的集合的添加方式
 	 */
 	protected final void addRequiredProperty(String property) {
 		this.requiredProperties.add(property);
@@ -111,7 +117,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	 * @throws IllegalArgumentException if environment is not assignable to
 	 * {@code ConfigurableEnvironment}
 	 */
-	@Override
+	@Override // 实现自 EnvironmentAware 接口，自动注入
 	public void setEnvironment(Environment environment) {
 		Assert.isInstanceOf(ConfigurableEnvironment.class, environment, "ConfigurableEnvironment required");
 		this.environment = (ConfigurableEnvironment) environment;
@@ -121,6 +127,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	 * Return the {@link Environment} associated with this servlet.
 	 * <p>If none specified, a default environment will be initialized via
 	 * {@link #createEnvironment()}.
+	 *
+	 * @tips // 实现自 EnvironmentCapable 接口
 	 */
 	@Override
 	public ConfigurableEnvironment getEnvironment() {
@@ -146,6 +154,23 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	 * properties are missing), or if subclass initialization fails.
 	 *
 	 * @tips servlet 初始化
+	 * 负责将 ServletConfig 设置到当前 Servlet 对象中
+	 *
+	 * <servlet>
+	 *     <servlet-name>spring</servlet-name>
+	 *     <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+	 *     <!-- 可以自定义servlet.xml配置文件的位置和名称，默认为WEB-INF目录下，名称为[<servlet-name>]-servlet.xml，如spring-servlet.xml
+	 *     <init-param>
+	 *         <param-name>contextConfigLocation</param-name>
+	 *         <param-value>/WEB-INF/spring-servlet.xml</param-value> // 默认
+	 *     </init-param>
+	 *     -->
+	 *     <load-on-startup>1</load-on-startup>
+	 * </servlet>
+	 * <servlet-mapping>
+	 *     <servlet-name>spring</servlet-name>
+	 *     <url-pattern>*.do</url-pattern>
+	 * </servlet-mapping>
 	 */
 	@Override
 	public final void init() throws ServletException {
@@ -157,6 +182,12 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 			try {
 				// 将当前的这个 servlet 类转换为一个 BeanWrapper，从而能够以 Spring 的方式来对
 				// init-param 的值进行注入
+				/**
+				 * 将当前的这个 Servlet 对象，转化成一个 BeanWrapper 对象。
+				 * 从而能够以 Spring 的方式来将 pvs 注入到该 BeanWrapper 对象中。
+				 * 简单来说，BeanWrapper 是 Spring 提供的一个用来操作 Java Bean 属性的工具，
+				 * 使用它可以直接修改一个对象的属性。
+				 */
 				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
 				ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
 				// 注册自定义属性编辑器，一旦遇到 Resource 类型的属性将会使用 ResourceEditor进行解析
@@ -164,6 +195,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 				// 空实现，留给子类覆盖
 				initBeanWrapper(bw);
 				// 属性注入，最常用的属性注入无非是 contextAttribute、contextClass、nameSpace、ContextConfigLocation等
+				// 以 Spring 的方式来将 pvs 注入到该 BeanWrapper 对象中
+				// 会反射设置到 FrameworkServlet.contextConfigLocation 属性
 				bw.setPropertyValues(pvs, true);
 			}
 			catch (BeansException ex) {
@@ -175,7 +208,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		}
 
 		// Let subclasses do whatever initialization they like.
-		// 留给子类扩展
+		// 留给子类扩展,实现自定义的初始化逻辑。目前，有具体的代码实现。
 		initServletBean();
 	}
 
@@ -214,6 +247,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 
 	/**
 	 * PropertyValues implementation created from ServletConfig init parameters.
+	 *
+	 * @tips ServletConfigPropertyValues 是 HttpServletBean 的私有静态类，继承 MutablePropertyValues 类，ServletConfig 的 PropertyValues 封装实现类。
 	 */
 	private static class ServletConfigPropertyValues extends MutablePropertyValues {
 
@@ -229,20 +264,25 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		public ServletConfigPropertyValues(ServletConfig config, Set<String> requiredProperties)
 				throws ServletException {
 
+			// 获得缺失的属性的集合
 			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ?
 					new HashSet<>(requiredProperties) : null);
 
+			// 遍历 ServletConfig 的初始化参数集合，添加到 ServletConfigPropertyValues 中，并从 missingProps 移除
 			Enumeration<String> paramNames = config.getInitParameterNames();
 			while (paramNames.hasMoreElements()) {
 				String property = paramNames.nextElement();
 				Object value = config.getInitParameter(property);
+				// 添加到 ServletConfigPropertyValues 中
 				addPropertyValue(new PropertyValue(property, value));
+				// 从 missingProps 中移除
 				if (missingProps != null) {
 					missingProps.remove(property);
 				}
 			}
 
 			// Fail if we are still missing properties.
+			// 如果存在缺失的属性，抛出 ServletException 异常
 			if (!CollectionUtils.isEmpty(missingProps)) {
 				throw new ServletException(
 						"Initialization from ServletConfig for servlet '" + config.getServletName() +

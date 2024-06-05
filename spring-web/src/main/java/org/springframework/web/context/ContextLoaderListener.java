@@ -98,6 +98,10 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 * @param context the application context to manage
 	 * @see #contextInitialized(ServletContextEvent)
 	 * @see #contextDestroyed(ServletContextEvent)
+	 *
+	 * @tips 这两个构造方法，是因为父类 ContextLoader 有这两个构造方法，所以必须重新定义。
+	 * 比较需要注意的是，第二个构造方法，可以直接传递一个 WebApplicationContext 对象，
+	 * 那样，实际 ContextLoaderListener 就无需在创建一个新的 WebApplicationContext 对象
 	 */
 	public ContextLoaderListener(WebApplicationContext context) {
 		super(context);
@@ -114,6 +118,8 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 		 * 这里涉及了一个常用类 WebApplicationContext：在 Web 应用中，我们会用到 WebApplicationContext，
 		 * 其继承于 ApplicationContext，在 ApplicationContext 的基础上又追加了一些特定于Web的操作及属性，
 		 * 非常类似于通过编程方式使用Spring时使用的 ClassPathXmlApplicationContext 类提供的功能
+		 *
+		 * 调用父类 ContextLoader 的 方法，初始化 WebApplicationContext 对象
 		 */
 		initWebApplicationContext(event.getServletContext());
 	}
@@ -121,6 +127,8 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 
 	/**
 	 * Close the root web application context.
+	 *
+	 * @tips 销毁 WebApplicationContext 容器的逻辑
 	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {

@@ -54,22 +54,41 @@ import org.springframework.web.util.UrlPathHelper;
  * @since 3.1
  */
 public final class RequestMappingInfo implements RequestCondition<RequestMappingInfo> {
-
+	/**
+	 * 名字
+	 */
 	@Nullable
 	private final String name;
-
+	/**
+	 * 看到各种条件。实际上，和 @RequestMapping 注解是一一对应的
+	 * 最多的还是 patternsCondition 请求路径条件，和 methodsCondition 请求方法条件。
+	 *
+	 * 请求路径的条件
+	 */
 	private final PatternsRequestCondition patternsCondition;
-
+	/**
+	 * 请求方法的条件
+	 */
 	private final RequestMethodsRequestCondition methodsCondition;
-
+	/**
+	 * 参数的条件
+	 */
 	private final ParamsRequestCondition paramsCondition;
-
+	/**
+	 * 请求头的条件
+	 */
 	private final HeadersRequestCondition headersCondition;
-
+	/**
+	 * 可消费的 Content-Type 的条件
+	 */
 	private final ConsumesRequestCondition consumesCondition;
-
+	/**
+	 * 可生产的 Content-Type 的条件
+	 */
 	private final ProducesRequestCondition producesCondition;
-
+	/**
+	 * 自定义的条件
+	 */
 	private final RequestConditionHolder customConditionHolder;
 
 
@@ -213,11 +232,15 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 * <p>For example the returned instance may contain the subset of URL patterns that match to
 	 * the current request, sorted with best matching patterns on top.
 	 * @return a new instance in case all conditions match; or {@code null} otherwise
+	 *
+	 * @tips 从当前 RequestMappingInfo 获得匹配的条件。如果匹配，则基于其匹配的条件，创建新的 RequestMappingInfo 对象。如果不匹配，则返回 null
 	 */
 	@Override
 	@Nullable
 	public RequestMappingInfo getMatchingCondition(HttpServletRequest request) {
+		// 也就是说，没有 **RequestMethod** 的条件，一定匹配成功，且结果就是自身 RequestMethodsRequestCondition 对象。
 		RequestMethodsRequestCondition methods = this.methodsCondition.getMatchingCondition(request);
+		// 如果任一为空，则返回 null ，表示匹配失败
 		if (methods == null) {
 			return null;
 		}
@@ -255,11 +278,14 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 * <p>Note: It is assumed both instances have been obtained via
 	 * {@link #getMatchingCondition(HttpServletRequest)} to ensure they have conditions with
 	 * content relevant to current request.
+	 *
+	 * @tips 比较优先级
 	 */
 	@Override
 	public int compareTo(RequestMappingInfo other, HttpServletRequest request) {
 		int result;
 		// Automatic vs explicit HTTP HEAD mapping
+		// 针对 HEAD 请求方法，特殊处理
 		if (HttpMethod.HEAD.matches(request.getMethod())) {
 			result = this.methodsCondition.compareTo(other.getMethodsCondition(), request);
 			if (result != 0) {

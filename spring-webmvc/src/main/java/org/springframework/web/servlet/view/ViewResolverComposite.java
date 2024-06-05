@@ -40,6 +40,8 @@ import org.springframework.web.servlet.ViewResolver;
  * @author Sebastien Deleuze
  * @author Rossen Stoyanchev
  * @since 4.1
+ *
+ * @tips 复合的 ViewResolver 实现类。
  */
 public class ViewResolverComposite implements ViewResolver, Ordered, InitializingBean,
 		ApplicationContextAware, ServletContextAware {
@@ -93,6 +95,10 @@ public class ViewResolverComposite implements ViewResolver, Ordered, Initializin
 		}
 	}
 
+	/**
+	 * 进一步初始化
+	 * @throws Exception
+	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		for (ViewResolver viewResolver : this.viewResolvers) {
@@ -105,8 +111,11 @@ public class ViewResolverComposite implements ViewResolver, Ordered, Initializin
 	@Override
 	@Nullable
 	public View resolveViewName(String viewName, Locale locale) throws Exception {
+		// 遍历 viewResolvers 数组，逐个进行解析，但凡成功，则返回该 View 对象
 		for (ViewResolver viewResolver : this.viewResolvers) {
+			// 执行解析
 			View view = viewResolver.resolveViewName(viewName, locale);
+			// 解析成功，则返回该 View 对象
 			if (view != null) {
 				return view;
 			}

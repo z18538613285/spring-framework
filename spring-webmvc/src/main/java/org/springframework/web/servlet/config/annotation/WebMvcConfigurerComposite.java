@@ -84,6 +84,10 @@ class WebMvcConfigurerComposite implements WebMvcConfigurer {
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
+		/**
+		 * 我们在示例给的 MVCConfiguration ，其实就是一个 WebMvcConfigurer 对象。
+		 * 这样，自己实现的 MVCConfiguration 的 #addInterceptors(InterceptorRegistry registry) 方法，就会被调用列。
+		 */
 		for (WebMvcConfigurer delegate : this.delegates) {
 			delegate.addInterceptors(registry);
 		}

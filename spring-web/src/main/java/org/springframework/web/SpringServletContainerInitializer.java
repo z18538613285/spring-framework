@@ -137,6 +137,10 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 	 * @param servletContext the servlet context to be initialized
 	 * @see WebApplicationInitializer#onStartup(ServletContext)
 	 * @see AnnotationAwareOrderComparator
+	 *
+	 * @tips 可以去项目中寻找一下 org.springframework:spring-web:version 的依赖，
+	 * 它下面就存在一个 ServletContainerInitializer 的扩展，指向了 SpringServletContainerInitializer，
+	 * 这样只要在 servlet 3.0 环境下部署，spring 便可以自动加载进行初始化：
 	 */
 	@Override
 	public void onStartup(@Nullable Set<Class<?>> webAppInitializerClasses, ServletContext servletContext)
@@ -148,6 +152,12 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 			for (Class<?> waiClass : webAppInitializerClasses) {
 				// Be defensive: Some servlet containers provide us with invalid classes,
 				// no matter what @HandlesTypes says...
+				/**
+				 * 英文注释是 spring 源码中自带的，它提示我们由于 servlet 厂商实现的差异，
+				 * onStartup 方法会加载我们本不想处理的 class，所以进行了特判。
+				 * 另外，也要注意下 @HandlesTypes(WebApplicationInitializer.class) 注解，
+				 * 如果厂商正确的实现 @HandlesTypes 的逻辑，传入的 Set<Class<?>> webAppInitializerClasses 都是 WebApplicationInitializer 对象。
+				 */
 				if (!waiClass.isInterface() && !Modifier.isAbstract(waiClass.getModifiers()) &&
 						WebApplicationInitializer.class.isAssignableFrom(waiClass)) {
 					try {
@@ -168,6 +178,18 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 
 		servletContext.log(initializers.size() + " Spring WebApplicationInitializers detected on classpath");
 		AnnotationAwareOrderComparator.sort(initializers);
+		/**
+		 * spring 与我们之前的 demo 不同，并没有在 SpringServletContainerInitializer 中直接对 servlet 和 filter 进行注册，
+		 * 而是委托给了一个陌生的类 org.springframework.web.WebApplicationInitializer 。WebApplicationInitializer 类
+		 * 便是 spring 用来初始化 web 环境的委托者类，它通常有三个实现类：
+		 * AbstractContextLoaderInitializer
+		 * AbstractDispatcherServletInitializer
+		 * AbstractAnnotationConfigDispatcherServletInitializer
+		 *
+		 *
+		 * AbstractDispatcherServletInitializer#registerDispatcherServlet
+		 * 便是无 web.xml 前提下创建 DispatcherServlet 的关键代码。
+		 */
 		for (WebApplicationInitializer initializer : initializers) {
 			initializer.onStartup(servletContext);
 		}

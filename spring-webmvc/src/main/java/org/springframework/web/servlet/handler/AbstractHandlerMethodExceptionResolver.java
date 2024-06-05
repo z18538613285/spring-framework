@@ -30,6 +30,12 @@ import org.springframework.web.servlet.ModelAndView;
  *
  * @author Rossen Stoyanchev
  * @since 3.1
+ *
+ * @tips  基于 handler 类型为 HandlerMethod 的 HandlerExceptionResolver 抽象类。
+ *
+ * 可能胖友会有疑惑，为什么 AbstractHandlerMethodExceptionResolver 只有一个 ExceptionHandlerExceptionResolver 子类，为什么还要做抽象呢？
+ * 因为 ExceptionHandlerExceptionResolver 是基于 @ExceptionHandler 注解来配置对应的异常处理器，
+ * 而如果未来我们想自定义其它的方式来配置对应的异常处理器，就可以来继承 AbstractHandlerMethodExceptionResolver 这个抽象类。
  */
 public abstract class AbstractHandlerMethodExceptionResolver extends AbstractHandlerExceptionResolver {
 
@@ -40,14 +46,19 @@ public abstract class AbstractHandlerMethodExceptionResolver extends AbstractHan
 	 */
 	@Override
 	protected boolean shouldApplyTo(HttpServletRequest request, @Nullable Object handler) {
+		// 情况一，如果 handler 为空，则直接调用父方法
 		if (handler == null) {
 			return super.shouldApplyTo(request, null);
 		}
+		// 情况二，处理 handler 为 HandlerMethod 类型的情况
 		else if (handler instanceof HandlerMethod) {
+			// <x> 获得真正的 handler
 			HandlerMethod handlerMethod = (HandlerMethod) handler;
 			handler = handlerMethod.getBean();
+			// 调用父方法
 			return super.shouldApplyTo(request, handler);
 		}
+		// 情况三，直接返回 false
 		else {
 			return false;
 		}

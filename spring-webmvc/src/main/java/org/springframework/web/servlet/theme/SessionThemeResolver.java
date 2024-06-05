@@ -36,6 +36,8 @@ import org.springframework.web.util.WebUtils;
  * @author Juergen Hoeller
  * @since 17.06.2003
  * @see #setThemeName
+ *
+ * @tips 就是将themeName 保存到 Session 中就可以了。
  */
 public class SessionThemeResolver extends AbstractThemeResolver {
 

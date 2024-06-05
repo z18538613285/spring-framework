@@ -32,12 +32,16 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  * @see GenericApplicationListener
  * @see GenericApplicationListenerAdapter
+ *
+ * @tips 提供了事件类型和来源的判断接口方法。
  */
 public interface SmartApplicationListener extends ApplicationListener<ApplicationEvent>, Ordered {
 
 	/**
 	 * Determine whether this listener actually supports the given event type.
 	 * @param eventType the event type (never {@code null})
+	 *
+	 * @tips 事件类型
 	 */
 	boolean supportsEventType(Class<? extends ApplicationEvent> eventType);
 
@@ -45,6 +49,8 @@ public interface SmartApplicationListener extends ApplicationListener<Applicatio
 	 * Determine whether this listener actually supports the given source type.
 	 * <p>The default implementation always returns {@code true}.
 	 * @param sourceType the source type, or {@code null} if no source
+	 *
+	 * 事件来源
 	 */
 	default boolean supportsSourceType(@Nullable Class<?> sourceType) {
 		return true;

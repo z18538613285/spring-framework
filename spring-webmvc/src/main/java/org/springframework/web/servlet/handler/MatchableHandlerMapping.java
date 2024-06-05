@@ -29,6 +29,8 @@ import org.springframework.web.servlet.HandlerMapping;
  * @author Rossen Stoyanchev
  * @since 4.3.1
  * @see HandlerMappingIntrospector
+ *
+ * @tips 定义判断请求和指定 pattern 路径是否匹配的接口方法。
  */
 public interface MatchableHandlerMapping extends HandlerMapping {
 
