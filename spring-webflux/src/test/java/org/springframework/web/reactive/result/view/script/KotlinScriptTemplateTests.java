@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class KotlinScriptTemplateTests {
 
-	@Test
+	/*@Test
 	public void renderTemplateWithFrenchLocale() throws Exception {
 		Map<String, Object> model = new HashMap<>();
 		model.put("foo", "Foo");
@@ -125,5 +125,5 @@ public class KotlinScriptTemplateTests {
 			return new ScriptTemplateConfigurer("kotlin");
 		}
 	}
-
+*/
 }

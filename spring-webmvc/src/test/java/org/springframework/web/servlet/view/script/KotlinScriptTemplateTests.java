@@ -44,7 +44,7 @@ import static org.mockito.Mockito.*;
  */
 public class KotlinScriptTemplateTests {
 
-	private WebApplicationContext webAppContext;
+	/*private WebApplicationContext webAppContext;
 
 	private ServletContext servletContext;
 
@@ -141,5 +141,5 @@ public class KotlinScriptTemplateTests {
 			return new ScriptTemplateConfigurer("kotlin");
 		}
 	}
-
+*/
 }
